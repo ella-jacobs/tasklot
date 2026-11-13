@@ -438,7 +438,7 @@ re-inline it into the simulator.
 ### 6.4 Voice pipeline: as built
 
 The Python side follows 6.1, plus four small modules: `logs.py` (the one logging
-helper), `side_channels.py` (`FileInbox` for the say/command files, `Speaker` for macOS
+helper), `side_channels.py` (`FileInbox` for the say/command files, `SayVoice` for macOS
 `say`), `offline.py` (`OfflineTool`, the logic behind the `voice` command), and
 `tests/fakes.py` (fake clock, port, and ffmpeg process). `condense.js` exposes a
 `Condenser` class alongside the function API the simulator calls.

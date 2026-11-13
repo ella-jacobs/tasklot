@@ -22,7 +22,7 @@ from .logs import log
 from .offline import OfflineError, OfflineTool
 from .recorder import NullRecorder, Recorder
 from .serial_link import SerialLink, SerialLinkError
-from .side_channels import FileInbox, Speaker
+from .side_channels import FileInbox, SayVoice
 from .transcriber import FakeTranscriber, ScriptTranscriber, Transcriber, TranscriptionError
 
 EXIT_OK = 0
@@ -98,7 +98,7 @@ def run_ears(args: argparse.Namespace, settings: Settings) -> int:
                                   timeout=settings.whisper_timeout)
     ears = Ears(link.send, recorder, transcriber,
                 labeler=Labeler(enabled=settings.llm_enabled, timeout=settings.llm_timeout),
-                speaker=Speaker(settings.voice, settings.say_rate),
+                voice=SayVoice(settings.voice, settings.say_rate),
                 say_inbox=FileInbox(settings.say_file), cmd_inbox=FileInbox(settings.cmd_file),
                 max_recording=settings.max_recording)
     link.on_reconnect = ears.on_reconnect

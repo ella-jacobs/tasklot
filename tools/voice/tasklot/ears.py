@@ -38,7 +38,7 @@ from .protocol import (
     CLEAR, Collected, Left, Ordering, Parked, Playback, TaskEcho, car_command,
     full_text_commands, parse_line,
 )
-from .side_channels import FileInbox, Speaker
+from .side_channels import FileInbox, SayVoice
 from .task import Task
 
 CAP_CHECK_INTERVAL_S = 1.0     # how often the capper looks at the open order
@@ -74,7 +74,7 @@ class Ears:
         lot: shared state; a fresh Lot by default.
         cleaner, condenser, labeler: pipeline stages; the labeler defaults to
             disabled so nothing calls an LLM unless the caller asks.
-        speaker: optional Speaker for the say inbox.
+        voice: optional SayVoice that speaks lines from the say inbox.
         say_inbox, cmd_inbox: optional FileInbox side channels.
         max_recording: seconds before an unparked order is closed.
         delete_recordings: remove each WAV once it has been transcribed.
@@ -86,7 +86,7 @@ class Ears:
                  cleaner: Optional[TranscriptCleaner] = None,
                  condenser: Optional[Condenser] = None,
                  labeler: Optional[Labeler] = None,
-                 speaker: Optional[Speaker] = None,
+                 voice: Optional[SayVoice] = None,
                  say_inbox: Optional[FileInbox] = None,
                  cmd_inbox: Optional[FileInbox] = None,
                  max_recording: float = MAX_RECORDING_S,
@@ -99,7 +99,7 @@ class Ears:
         self.cleaner = cleaner or TranscriptCleaner()
         self.condenser = condenser or Condenser()
         self.labeler = labeler or Labeler(enabled=False, log=log)
-        self.speaker = speaker
+        self.voice = voice
         self.say_inbox = say_inbox
         self.cmd_inbox = cmd_inbox
         self.max_recording = max_recording
@@ -335,9 +335,9 @@ class Ears:
                 self.log(f"[{tag}] !! {exc}")
 
     def _say(self, text: str) -> None:
-        """Speak a line from the say inbox, if a Speaker is configured."""
-        if self.speaker is not None:
-            self.speaker.speak(text)
+        """Speak a line from the say inbox, if a SayVoice is configured."""
+        if self.voice is not None:
+            self.voice.speak(text)
 
     def on_reconnect(self) -> None:
         """After the board resets it has forgotten every label (E-37): re-send
@@ -365,8 +365,8 @@ class Ears:
         problems = getattr(self.transcriber, "problems", lambda: [])()
         for problem in problems:
             self.log(f"[whisper] !! {problem}")
-        if self.speaker is not None:
-            voice = self.speaker.pick_voice()
+        if self.voice is not None:
+            voice = self.voice.pick_voice()
             self.log(f"[voice] using {voice or 'system default (no premium voice installed)'}")
 
     def start_background_threads(self) -> None:

@@ -18,7 +18,7 @@ Modules, in pipeline order:
     labeler       Labeler: optional LLM label with hallucination guards
     task, lot     Task and Lot: the laptop's model of the cars
     ears          Ears: the live daemon that wires everything together
-    side_channels FileInbox (say/command files) and Speaker (macOS `say`)
+    side_channels FileInbox (say/command files) and SayVoice (macOS `say`)
     offline       OfflineTool: memo or text -> tasks.json -> optional push
     cli           `python3 -m tasklot ears|voice`
 

@@ -66,7 +66,7 @@ if it adds a time, day, or number that was never said, and the rule-based label 
 | `tasklot/task.py`, `tasklot/lot.py` | `Task` and `Lot`: the laptop's state, and `tasks.json`. |
 | `tasklot/ears.py` | `Ears`: the live daemon that wires it all together. |
 | `tasklot/offline.py` | `OfflineTool`: audio or text -> `tasks.json` -> optional push. |
-| `tasklot/side_channels.py` | `FileInbox` (the say/command files) and `Speaker` (macOS `say`). |
+| `tasklot/side_channels.py` | `FileInbox` (the say/command files) and `SayVoice` (macOS `say`). |
 | `tasklot/cli.py` | Argument parsing for `ears` and `voice`. |
 | `condense.js` | The `Condenser` for the browser, rule for rule the same as the Python one. |
 | `cases.json` | Shared fixtures both condensers must pass. |
@@ -95,6 +95,7 @@ node --test tools/voice/tests/*.test.js
 | `test_transcriber.py` | whisper-cli failures (missing binary, timeout, non-zero exit, tiny file), the offline script transcriber, the fake. |
 | `test_ears.py` | The daemon end to end with fakes: order flow, two cars at the speaker, pickup during an order or during labelling, the 60 s cap, RESET, reconnect. |
 | `test_cli.py` | The offline tool's output and `tasks.json` match the original script; `--push` pacing; `--watch`; clear errors. |
+| `test_side_channels.py` | `SayVoice` voice choice and the `say` command line (text after `--`), with `say` mocked. |
 | `test_ears_mock.py` | The real daemon process against a fake board on a pseudo-terminal, checking every byte written (needs pyserial). |
 
 The design, the serial protocol, and the edge-case list (E-01 to E-43) are in

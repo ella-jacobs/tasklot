@@ -134,8 +134,8 @@ class EmptyTranscriptTest(EarsTestCase):
         self.assertIn("nothing left after cleanup", self.log.text())
 
 
-class SpeakerEdgeCasesTest(EarsTestCase):
-    """E-09, E-10, E-11, E-12."""
+class SpeakerLaneEdgeCasesTest(EarsTestCase):
+    """The ordering lane's reader (the "speaker"): E-09, E-10, E-11, E-12."""
 
     def test_same_car_re_read_keeps_recording(self):
         # E-09

@@ -7,8 +7,9 @@ else can talk to the board. Two watched files fill that gap:
     echo CLEAR > /tmp/tasklot_cmd.txt                            # sent to the board
     echo RESET > /tmp/tasklot_cmd.txt                            # wipe laptop + board
 
-FileInbox watches one file by modification time; Speaker wraps macOS `say`
-with the best installed voice. Paths come from Settings (E-43).
+FileInbox watches one file by modification time; SayVoice wraps macOS `say`
+with the best installed voice. (It is named for what it does: in the rest of
+the project "the speaker" is the RFID reader in the ordering lane.) Paths come from Settings (E-43).
 """
 from __future__ import annotations
 
@@ -66,7 +67,7 @@ class FileInbox:
         return text or None
 
 
-class Speaker:
+class SayVoice:
     """Speaks text with macOS `say`, without blocking.
 
     Args:
@@ -107,7 +108,9 @@ class Speaker:
 
     def speak(self, text: str) -> None:
         """Start speaking `text` in the background; failures are logged."""
-        cmd = ["say", "-r", self.rate] + (["-v", self.voice] if self.voice else []) + [text]
+        # "--" ends the options, so text that starts with "-" is spoken, not
+        # read as a `say` option like -o (write a file) or -f (read one).
+        cmd = ["say", "-r", self.rate] + (["-v", self.voice] if self.voice else []) + ["--", text]
         try:
             self.popen(cmd)
             self.log(f"[say] {text}")
