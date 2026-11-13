@@ -16,7 +16,7 @@ bottom panel, and the original one-piece printed base.
 ```bash
 cd build/cad
 python3 audit.py              # all parts (needs OpenSCAD)
-python3 audit.py restaurant   # one part
+python3 audit.py restaurant   # checks every part, renders only this one
 ./render.sh
 ```
 
