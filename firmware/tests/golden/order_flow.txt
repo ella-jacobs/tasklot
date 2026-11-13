@@ -1,0 +1,146 @@
+=== order_flow
+-- boot (t=0)
+  < \r\n
+  < === TaskLot v2 - four spaces, a speaker, a pickup lane ===\r\n
+  < space 1 reader (SS 44): 0x92   ok - genuine\r\n
+  < space 2 reader (SS 45): 0x92   ok - genuine\r\n
+  < space 3 reader (SS 40): 0x92   ok - genuine\r\n
+  < space 4 reader (SS 41): 0x92   ok - genuine\r\n
+  < speaker reader (SS 37): 0x92   ok - genuine\r\n
+  < pickup  reader (SS 36): 0x92   ok - genuine\r\n
+  < (good versions but no tag reads = starved 3.3V rail, not wiring)\r\n
+  < LCD: 0x27\r\n
+  < Drive past the SPEAKER to order. PARK to finish the order.\r\n
+  < Drive through PICKUP when the task is done.\r\n
+  < Send: CAR <n> <text> | DONE <n> | CLEAR | LOT | PING\r\n
+  < \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- blank car 1 at the speaker (t=0)
+  < * NEW CAR registered -> CAR 1   UID 04 A1 10 2B 7C 51 80 \r\n
+  < SPEAKER  CAR 1 ordering\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  | ORDER IN PROGRESS  |
+  |       CAR 1        |
+  |    listening...    |
+  | park it when done  |
+-- ORDER IN PROGRESS, 0.5 s later (t=60)
+  |                    |
+  |       CAR 1        |
+  |    listening...    |
+  | park it when done  |
+-- lift, re-present inside the cooldown (E-09) (t=600)
+  | ORDER IN PROGRESS  |
+  |       CAR 1        |
+  |    listening...    |
+  | park it when done  |
+-- lift, wait past the cooldown, present again (t=1320)
+  < SPEAKER  CAR 1 ordering\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  | ORDER IN PROGRESS  |
+  |       CAR 1        |
+  |    listening...    |
+  | park it when done  |
+-- park car 1 on space 1: order closes (t=3960)
+  < SPACE 1  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |                    |
+  |    ORDER IS IN     |
+  |                    |
+  |                    |
+-- ORDER IS IN, 0.3 s in (t=4080)
+  |                    |
+  |                    |
+  |                    |
+  |                    |
+-- announcement over (t=4380)
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- laptop sends the label (t=5880)
+  < TASK 1 Email the Prof\r\n
+  < --------------------\r\n
+  < 1>Email the Prof\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>Email the Prof    |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- move the labelled car: no announcement (t=5940)
+  < SPACE 1  -> CAR 1 left\r\n
+  < SPACE 2  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>Email the Prof\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>Email the Prof    |
+  |3>-                 |
+  |4>-                 |
+-- blank car 2 orders (t=6600)
+  < * NEW CAR registered -> CAR 2   UID 04 B2 21 3C 8D 62 80 \r\n
+  < SPEAKER  CAR 2 ordering\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>Email the Prof\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  | ORDER IN PROGRESS  |
+  |       CAR 2        |
+  |    listening...    |
+  | park it when done  |
+-- blank car 3 takes over the speaker (E-10) (t=6660)
+  < * NEW CAR registered -> CAR 3   UID 04 C3 32 4D 9E 73 81 \r\n
+  < SPEAKER  CAR 3 ordering\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>Email the Prof\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  | ORDER IN PROGRESS  |
+  |       CAR 3        |
+  |    listening...    |
+  | park it when done  |
+-- car 2 parks while car 3 is ordering (E-11) (t=7020)
+  < SPACE 3  <- CAR 2 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>Email the Prof\r\n
+  < 3>CAR 2\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>Email the Prof    |
+  |3>CAR 2             |
+  |4>-                 |

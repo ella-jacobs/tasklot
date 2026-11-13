@@ -1,0 +1,219 @@
+=== readback
+-- boot (t=0)
+  < \r\n
+  < === TaskLot v2 - four spaces, a speaker, a pickup lane ===\r\n
+  < space 1 reader (SS 44): 0x92   ok - genuine\r\n
+  < space 2 reader (SS 45): 0x92   ok - genuine\r\n
+  < space 3 reader (SS 40): 0x92   ok - genuine\r\n
+  < space 4 reader (SS 41): 0x92   ok - genuine\r\n
+  < speaker reader (SS 37): 0x92   ok - genuine\r\n
+  < pickup  reader (SS 36): 0x92   ok - genuine\r\n
+  < (good versions but no tag reads = starved 3.3V rail, not wiring)\r\n
+  < LCD: 0x27\r\n
+  < Drive past the SPEAKER to order. PARK to finish the order.\r\n
+  < Drive through PICKUP when the task is done.\r\n
+  < Send: CAR <n> <text> | DONE <n> | CLEAR | LOT | PING\r\n
+  < \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 1 on space 1 (t=0)
+  < * NEW CAR registered -> CAR 1   UID 04 A1 10 2B 7C 51 80 \r\n
+  < SPACE 1  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- label it (t=60)
+  < TASK 1 Buy milk\r\n
+  < --------------------\r\n
+  < 1>Buy milk\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>Buy milk          |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- lift it and wait (t=120)
+  < SPACE 1  -> CAR 1 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- labelled car 1 at the speaker (t=1680)
+  < PLAYBACK CAR 1 reading back\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |      Buy milk      |
+  |                    |
+  |                    |
+-- laptop sends the full text (t=2040)
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |Buy milk and eggs   |
+  |and also the bread  |
+  |from the corner     |
+-- page 2 (t=2400)
+  |     YOUR ORDER     |
+  |shop before it      |
+  |closes tonight at   |
+  |nine because        |
+-- page 3 (t=4920)
+  |     YOUR ORDER     |
+  |tomorrow is a       |
+  |holiday             |
+  |                    |
+-- wraps to page 1 (t=7440)
+  |     YOUR ORDER     |
+  |Buy milk and eggs   |
+  |and also the bread  |
+  |from the corner     |
+-- 12 s timeout (t=9960)
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- PLAY 1 (no timeout) (t=15000)
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |shop before it      |
+  |closes tonight at   |
+  |nine because        |
+-- LOT ends it (t=28080)
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- one long word wraps hard (t=28140)
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |Supercalifragilistic|
+  |expialidocious yes  |
+  |                    |
+-- park during the read-back ends it (t=28320)
+  < SPACE 2  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>Buy milk\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>Buy milk          |
+  |3>-                 |
+  |4>-                 |
+-- CLEAR, then PLAY a blank car (t=28980)
+  < * tasks cleared\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 1\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 1\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |     (no task)      |
+  |                    |
+  |                    |
+-- LOT (t=29100)
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 1\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>CAR 1             |
+  |3>-                 |
+  |4>-                 |
+-- relabel and read back without full text (label only) (t=29160)
+  < TASK 1 Call the dentist\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>Call the dentist\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  -> CAR 1 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < PLAYBACK CAR 1 reading back\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |  Call the dentist  |
+  |                    |
+  |                    |
+-- collect car 1 during its own read-back (t=31140)
+  < PICKUP   CAR 1 collected\r\n
+  < TASK 1 \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |

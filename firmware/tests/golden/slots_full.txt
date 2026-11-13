@@ -1,0 +1,212 @@
+=== slots_full
+-- boot (t=0)
+  < \r\n
+  < === TaskLot v2 - four spaces, a speaker, a pickup lane ===\r\n
+  < space 1 reader (SS 44): 0x92   ok - genuine\r\n
+  < space 2 reader (SS 45): 0x92   ok - genuine\r\n
+  < space 3 reader (SS 40): 0x92   ok - genuine\r\n
+  < space 4 reader (SS 41): 0x92   ok - genuine\r\n
+  < speaker reader (SS 37): 0x92   ok - genuine\r\n
+  < pickup  reader (SS 36): 0x92   ok - genuine\r\n
+  < (good versions but no tag reads = starved 3.3V rail, not wiring)\r\n
+  < LCD: 0x27\r\n
+  < Drive past the SPEAKER to order. PARK to finish the order.\r\n
+  < Drive through PICKUP when the task is done.\r\n
+  < Send: CAR <n> <text> | DONE <n> | CLEAR | LOT | PING\r\n
+  < \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- truncated read (bench UID A) (t=0)
+  < * ignored a bad read (truncated UID): 04 D1 60 00 00 00 00 \r\n
+  < \r\n
+  <   no car slots left - reset the board to clear\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- truncated read (bench UID B) (t=60)
+  < * ignored a bad read (truncated UID): 04 E1 63 00 00 00 00 \r\n
+  < \r\n
+  <   no car slots left - reset the board to clear\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- two trailing zeros (t=180)
+  < * ignored a bad read (truncated UID): 04 5A 6B 7C 8D 00 00 \r\n
+  < \r\n
+  <   no car slots left - reset the board to clear\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- 3-byte UID (t=300)
+  < * ignored a bad read (truncated UID): 04 5A 6B \r\n
+  < \r\n
+  <   no car slots left - reset the board to clear\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- plausible 4-byte UID registers (t=420)
+  < * NEW CAR registered -> CAR 1   UID 3A 5B 7C 9D \r\n
+  < SPACE 1  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- seven more cars fill the registry (t=540)
+  < SPACE 1  -> CAR 1 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < * NEW CAR registered -> CAR 2   UID 04 A1 10 2B 7C 51 80 \r\n
+  < SPACE 2  <- CAR 2 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 2\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  -> CAR 2 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < * NEW CAR registered -> CAR 3   UID 04 B2 21 3C 8D 62 80 \r\n
+  < SPACE 2  <- CAR 3 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 3\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  -> CAR 3 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < * NEW CAR registered -> CAR 4   UID 04 C3 32 4D 9E 73 81 \r\n
+  < SPACE 2  <- CAR 4 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 4\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  -> CAR 4 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < * NEW CAR registered -> CAR 5   UID 04 D4 43 5E AF 84 81 \r\n
+  < SPACE 2  <- CAR 5 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 5\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  -> CAR 5 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < * NEW CAR registered -> CAR 6   UID 04 E5 54 6F B0 95 82 \r\n
+  < SPACE 2  <- CAR 6 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 6\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  -> CAR 6 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < * NEW CAR registered -> CAR 7   UID 04 F6 65 70 C1 A6 82 \r\n
+  < SPACE 2  <- CAR 7 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 7\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  -> CAR 7 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < * NEW CAR registered -> CAR 8   UID 04 07 76 81 D2 B7 83 \r\n
+  < SPACE 2  <- CAR 8 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 8\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  -> CAR 8 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- a ninth car on a space (E-25) (t=13440)
+  <   no car slots left - reset the board to clear\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- a ninth car on a lane (t=13500)
+  <   no car slots left - reset the board to clear\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- known cars still work (t=13620)
+  < SPACE 4  <- CAR 2 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>CAR 2\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>CAR 2             |

@@ -1,0 +1,34 @@
+=== boot_degraded
+-- boot (t=0)
+  < \r\n
+  < === TaskLot v2 - four spaces, a speaker, a pickup lane ===\r\n
+  < space 1 reader (SS 44): 0x92   ok - genuine\r\n
+  < space 2 reader (SS 45): 0x00   <-- NOT TALKING\r\n
+  < space 3 reader (SS 40): 0x12   ok - clone\r\n
+  < space 4 reader (SS 41): 0xFF   <-- NOT TALKING\r\n
+  < speaker reader (SS 37): 0x88   ok - clone\r\n
+  < pickup  reader (SS 36): 0x55   ?? unexpected, but answering\r\n
+  < (good versions but no tag reads = starved 3.3V rail, not wiring)\r\n
+  < LCD: none found. Check 5V, GND, SDA->20, SCL->21.\r\n
+  <      Readers still work; the lot prints to Serial only.\r\n
+  < Drive past the SPEAKER to order. PARK to finish the order.\r\n
+  < Drive through PICKUP when the task is done.\r\n
+  < Send: CAR <n> <text> | DONE <n> | CLEAR | LOT | PING\r\n
+  < \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  [no LCD]
+-- car on space 1 with no LCD (t=0)
+  < * NEW CAR registered -> CAR 1   UID 04 A1 10 2B 7C 51 80 \r\n
+  < SPACE 1  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  [no LCD]

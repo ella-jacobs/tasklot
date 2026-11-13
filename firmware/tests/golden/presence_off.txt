@@ -1,0 +1,95 @@
+=== presence_off
+-- boot (t=0)
+  < \r\n
+  < === TaskLot v2 - four spaces, a speaker, a pickup lane ===\r\n
+  < space 1 reader (SS 44): 0x92   ok - genuine\r\n
+  < space 2 reader (SS 45): 0x92   ok - genuine\r\n
+  < space 3 reader (SS 40): 0x92   ok - genuine\r\n
+  < space 4 reader (SS 41): 0x92   ok - genuine\r\n
+  < speaker reader (SS 37): 0x92   ok - genuine\r\n
+  < pickup  reader (SS 36): 0x92   ok - genuine\r\n
+  < (good versions but no tag reads = starved 3.3V rail, not wiring)\r\n
+  < LCD: 0x27\r\n
+  < Drive past the SPEAKER to order. PARK to finish the order.\r\n
+  < Drive through PICKUP when the task is done.\r\n
+  < Send: CAR <n> <text> | DONE <n> | CLEAR | LOT | PING\r\n
+  < \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 1 on space 1 (t=0)
+  < * NEW CAR registered -> CAR 1   UID 04 A1 10 2B 7C 51 80 \r\n
+  < SPACE 1  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- lift: no departure without presence (t=60)
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- put back on space 1: nothing new (t=2160)
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 1 on space 2 releases space 1 (t=2520)
+  < SPACE 1  -> CAR 1 left\r\n
+  < SPACE 2  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 1\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>CAR 1             |
+  |3>-                 |
+  |4>-                 |
+-- order with car 2 and re-land car 1 on space 2 (t=2640)
+  < * NEW CAR registered -> CAR 2   UID 04 B2 21 3C 8D 62 80 \r\n
+  < SPEAKER  CAR 2 ordering\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 1\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 1\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>CAR 1             |
+  |3>-                 |
+  |4>-                 |
+-- pickup releases the space (t=4860)
+  < PICKUP   CAR 1 collected\r\n
+  < TASK 1 \r\n
+  < SPACE 2  -> CAR 1 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |

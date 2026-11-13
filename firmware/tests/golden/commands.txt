@@ -1,0 +1,255 @@
+=== commands
+-- boot (t=0)
+  < \r\n
+  < === TaskLot v2 - four spaces, a speaker, a pickup lane ===\r\n
+  < space 1 reader (SS 44): 0x92   ok - genuine\r\n
+  < space 2 reader (SS 45): 0x92   ok - genuine\r\n
+  < space 3 reader (SS 40): 0x92   ok - genuine\r\n
+  < space 4 reader (SS 41): 0x92   ok - genuine\r\n
+  < speaker reader (SS 37): 0x92   ok - genuine\r\n
+  < pickup  reader (SS 36): 0x92   ok - genuine\r\n
+  < (good versions but no tag reads = starved 3.3V rail, not wiring)\r\n
+  < LCD: 0x27\r\n
+  < Drive past the SPEAKER to order. PARK to finish the order.\r\n
+  < Drive through PICKUP when the task is done.\r\n
+  < Send: CAR <n> <text> | DONE <n> | CLEAR | LOT | PING\r\n
+  < \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 1 on space 1 (t=0)
+  < * NEW CAR registered -> CAR 1   UID 04 A1 10 2B 7C 51 80 \r\n
+  < SPACE 1  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- PING / PINGX / LOTS (t=60)
+  < PONG\r\n
+  < PONG\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- bad car numbers (E-34) (t=240)
+  < * bad car number: 0\r\n
+  < * bad car number: 9\r\n
+  < * bad car number: 0\r\n
+  < * bad car number: -1\r\n
+  < * bad car number: 0\r\n
+  < * bad car number: 99\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- prefix mismatches are unknown (t=600)
+  < * unknown command: ORDER\r\n
+  < * unknown command: FULLSHOW\r\n
+  < * unknown command: car 1 lowercase\r\n
+  < * unknown command: PARK 1 1\r\n
+  < * unknown command: LEAVE 1\r\n
+  < * unknown command: EMPTY\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- over-long CAR line (truncated at 47, then 18) (t=960)
+  < TASK 1 abcdefghijklmnopqr\r\n
+  < --------------------\r\n
+  < 1>abcdefghijklmnopqr\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>abcdefghijklmnopqr|
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- extra spaces, CRLF, empty lines (t=1020)
+  < TASK 1 spaced   out\r\n
+  < --------------------\r\n
+  < 1>spaced   out\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>spaced   out      |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- two commands in one burst (t=1140)
+  < PONG\r\n
+  < --------------------\r\n
+  < 1>spaced   out\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>spaced   out      |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- non-ASCII bytes stored as-is (E-17) (t=1200)
+  < TASK 1 caf\xC3\xA9 \xE2\x80\x9Cq\xE2\x80\x9D\r\n
+  < --------------------\r\n
+  < 1>caf\xC3\xA9 \xE2\x80\x9Cq\xE2\x80\x9D\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>caf\xC3\xA9 \xE2\x80\x9Cq\xE2\x80\x9D     |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- label a car never seen (t=1260)
+  < TASK 5 hello\r\n
+  < --------------------\r\n
+  < 1>caf\xC3\xA9 \xE2\x80\x9Cq\xE2\x80\x9D\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>caf\xC3\xA9 \xE2\x80\x9Cq\xE2\x80\x9D     |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- CAR with no text blanks the label (t=1320)
+  < TASK 1 \r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- DONE on a labelled car (t=1380)
+  < TASK 1 finish me\r\n
+  < --------------------\r\n
+  < 1>finish me\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < TASK 1 \r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |                    |
+  |                    |
+  |                    |
+  |                    |
+-- DONE on a blank car (t=1800)
+  < TASK 1 \r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- ORDER 2 (blank) then DONE 2 while ordering (t=3900)
+  < SPEAKER  CAR 2 ordering\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < TASK 2 \r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |                    |
+  |       CAR 0        |
+  |    listening...    |
+  | park it when done  |
+-- LOT does not drop an ORDERING screen (t=4920)
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  | ORDER IN PROGRESS  |
+  |       CAR 0        |
+  |    listening...    |
+  | park it when done  |
+-- ORDER on a labelled car becomes a read-back (t=4980)
+  < TASK 1 back again\r\n
+  < --------------------\r\n
+  < 1>back again\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < PLAYBACK CAR 1 reading back\r\n
+  < --------------------\r\n
+  < 1>back again\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |     back again     |
+  |                    |
+  |                    |
+-- FULL past 120 characters (t=5100)
+  < --------------------\r\n
+  < 1>back again\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |01234567890123456789|
+  |01234567890123456789|
+  |abcdefghijabcdefghij|
+-- CLEAR (t=10440)
+  < * tasks cleared\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |     YOUR ORDER     |
+  |     (no task)      |
+  |                    |
+  |                    |
+-- FORGET (t=10500)
+  < * REMEMBER is off - nothing is saved\r\n
+  |     YOUR ORDER     |
+  |     (no task)      |
+  |                    |
+  |                    |

@@ -1,0 +1,169 @@
+=== pickup
+-- boot (t=0)
+  < \r\n
+  < === TaskLot v2 - four spaces, a speaker, a pickup lane ===\r\n
+  < space 1 reader (SS 44): 0x92   ok - genuine\r\n
+  < space 2 reader (SS 45): 0x92   ok - genuine\r\n
+  < space 3 reader (SS 40): 0x92   ok - genuine\r\n
+  < space 4 reader (SS 41): 0x92   ok - genuine\r\n
+  < speaker reader (SS 37): 0x92   ok - genuine\r\n
+  < pickup  reader (SS 36): 0x92   ok - genuine\r\n
+  < (good versions but no tag reads = starved 3.3V rail, not wiring)\r\n
+  < LCD: 0x27\r\n
+  < Drive past the SPEAKER to order. PARK to finish the order.\r\n
+  < Drive through PICKUP when the task is done.\r\n
+  < Send: CAR <n> <text> | DONE <n> | CLEAR | LOT | PING\r\n
+  < \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 1 on space 1 (t=0)
+  < * NEW CAR registered -> CAR 1   UID 04 A1 10 2B 7C 51 80 \r\n
+  < SPACE 1  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 2 on space 2 (t=60)
+  < * NEW CAR registered -> CAR 2   UID 04 B2 21 3C 8D 62 80 \r\n
+  < SPACE 2  <- CAR 2 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>CAR 2\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>CAR 2             |
+  |3>-                 |
+  |4>-                 |
+-- label car 1 (t=120)
+  < TASK 1 Task one\r\n
+  < --------------------\r\n
+  < 1>Task one\r\n
+  < 2>CAR 2\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>Task one          |
+  |2>CAR 2             |
+  |3>-                 |
+  |4>-                 |
+-- carry car 1 from space 1 to pickup (t=180)
+  < PICKUP   CAR 1 collected\r\n
+  < TASK 1 \r\n
+  < SPACE 1  -> CAR 1 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>CAR 2\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |                    |
+  |     ALL DONE!!     |
+  |                    |
+  |                    |
+-- ALL DONE!!, 0.3 s in (t=300)
+  |                    |
+  |                    |
+  |                    |
+  |                    |
+-- announcement over (t=600)
+  |1>-                 |
+  |2>CAR 2             |
+  |3>-                 |
+  |4>-                 |
+-- blank car 2 to pickup: no ALL DONE (t=2100)
+  < PICKUP   CAR 2 collected\r\n
+  < TASK 2 \r\n
+  < SPACE 2  -> CAR 2 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 3 orders, then goes straight to pickup (E-12) (t=2820)
+  < * NEW CAR registered -> CAR 3   UID 04 C3 32 4D 9E 73 81 \r\n
+  < SPEAKER  CAR 3 ordering\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < PICKUP   CAR 3 collected\r\n
+  < TASK 3 \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 4 orders; car 2 is collected meanwhile (t=3900)
+  < * NEW CAR registered -> CAR 4   UID 04 D4 43 5E AF 84 81 \r\n
+  < SPEAKER  CAR 4 ordering\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < PICKUP   CAR 2 collected\r\n
+  < TASK 2 \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 4 parks: order closes (t=4920)
+  < SPACE 3  <- CAR 4 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>CAR 4\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>CAR 4             |
+  |4>-                 |
+-- car 1 lingers on pickup: one event (t=7080)
+  < PICKUP   CAR 1 collected\r\n
+  < TASK 1 \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>CAR 4\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>CAR 4             |
+  |4>-                 |

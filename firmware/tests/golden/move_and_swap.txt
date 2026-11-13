@@ -1,0 +1,143 @@
+=== move_and_swap
+-- boot (t=0)
+  < \r\n
+  < === TaskLot v2 - four spaces, a speaker, a pickup lane ===\r\n
+  < space 1 reader (SS 44): 0x92   ok - genuine\r\n
+  < space 2 reader (SS 45): 0x92   ok - genuine\r\n
+  < space 3 reader (SS 40): 0x92   ok - genuine\r\n
+  < space 4 reader (SS 41): 0x92   ok - genuine\r\n
+  < speaker reader (SS 37): 0x92   ok - genuine\r\n
+  < pickup  reader (SS 36): 0x92   ok - genuine\r\n
+  < (good versions but no tag reads = starved 3.3V rail, not wiring)\r\n
+  < LCD: 0x27\r\n
+  < Drive past the SPEAKER to order. PARK to finish the order.\r\n
+  < Drive through PICKUP when the task is done.\r\n
+  < Send: CAR <n> <text> | DONE <n> | CLEAR | LOT | PING\r\n
+  < \r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 1 on space 1 (t=0)
+  < * NEW CAR registered -> CAR 1   UID 04 A1 10 2B 7C 51 80 \r\n
+  < SPACE 1  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- car 2 on space 3 (t=60)
+  < * NEW CAR registered -> CAR 2   UID 04 B2 21 3C 8D 62 80 \r\n
+  < SPACE 3  <- CAR 2 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 1\r\n
+  < 2>-\r\n
+  < 3>CAR 2\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>CAR 1             |
+  |2>-                 |
+  |3>CAR 2             |
+  |4>-                 |
+-- label both (t=120)
+  < TASK 1 alpha\r\n
+  < --------------------\r\n
+  < 1>alpha\r\n
+  < 2>-\r\n
+  < 3>CAR 2\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < TASK 2 bravo\r\n
+  < --------------------\r\n
+  < 1>alpha\r\n
+  < 2>-\r\n
+  < 3>bravo\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>alpha             |
+  |2>-                 |
+  |3>bravo             |
+  |4>-                 |
+-- move car 1 straight from space 1 to space 2 (E-26) (t=240)
+  < SPACE 1  -> CAR 1 left\r\n
+  < SPACE 2  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>alpha\r\n
+  < 3>bravo\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>alpha             |
+  |3>bravo             |
+  |4>-                 |
+-- fast swap of spaces 2 and 3 (both land inside GONE_MS) (t=1860)
+  |1>-                 |
+  |2>alpha             |
+  |3>bravo             |
+  |4>-                 |
+-- slow swap: lift both, wait, then set down swapped (t=3600)
+  < SPACE 2  -> CAR 1 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>bravo\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 3  -> CAR 2 left\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>-\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 2  <- CAR 2 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>bravo\r\n
+  < 3>-\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < SPACE 3  <- CAR 1 parked\r\n
+  < --------------------\r\n
+  < 1>-\r\n
+  < 2>bravo\r\n
+  < 3>alpha\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  |1>-                 |
+  |2>bravo             |
+  |3>alpha             |
+  |4>-                 |
+-- fill spaces 1 and 4 too (E-24) (t=5880)
+  < * NEW CAR registered -> CAR 3   UID 04 C3 32 4D 9E 73 81 \r\n
+  < SPACE 1  <- CAR 3 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 3\r\n
+  < 2>bravo\r\n
+  < 3>alpha\r\n
+  < 4>-\r\n
+  < --------------------\r\n
+  < * NEW CAR registered -> CAR 4   UID 04 D4 43 5E AF 84 81 \r\n
+  < SPACE 4  <- CAR 4 parked\r\n
+  < --------------------\r\n
+  < 1>CAR 3\r\n
+  < 2>bravo\r\n
+  < 3>alpha\r\n
+  < 4>CAR 4\r\n
+  < --------------------\r\n
+  |1>CAR 3             |
+  |2>bravo             |
+  |3>alpha             |
+  |4>CAR 4             |
