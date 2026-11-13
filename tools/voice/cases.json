@@ -1,0 +1,39 @@
+{
+  "_comment": "Shared fixtures. condense.js and condense.py are BOTH checked against this file, so the browser and the CLI can never quietly disagree about what a memo means. Add a case whenever a real memo comes out wrong. Run: node test_condense.js && python3 test_condense.py",
+  "width": 18,
+  "cases": [
+    { "in": "Um okay so I really need to email the professor about whether we still need the poster by Friday",
+      "full": "Email the professor about whether we still need the poster",
+      "lcd": "Email the Prof", "due": "friday" },
+
+    { "in": "remind me to charge the battery pack tonight",
+      "full": "Charge the battery pack", "lcd": "Charge battry pack", "due": "tonight" },
+
+    { "in": "Note to self, don't forget to print the reader coupon before class tomorrow",
+      "full": "Print the reader coupon before class", "lcd": "Print reader coupn", "due": "tomorrow" },
+
+    { "in": "I gotta finish the lab report",
+      "full": "Finish the lab report", "lcd": "Finish lab report", "due": "" },
+
+    { "in": "uh I have to book a study room in the library for the group meeting at 4pm",
+      "full": "Book a study room in the library for the group meeting",
+      "lcd": "Book a study room", "due": "4pm" },
+
+    { "in": "call mom", "full": "Call mom", "lcd": "Call mom", "due": "" },
+
+    { "in": "I need to solder the headers onto the second RC522 reader",
+      "full": "Solder the headers onto the second RC522 reader",
+      "lcd": "Solder the headers", "due": "" },
+
+    { "in": "we need to reconcile the deck against the toolbox",
+      "full": "Reconcile the deck against the toolbox", "lcd": "Reconcile the deck", "due": "" },
+
+    { "in": "I should really write the AI disclosure slide for the critique",
+      "full": "Write the AI disclosure slide for the critique",
+      "lcd": "Write AI disclosur", "due": "" },
+
+    { "in": "", "full": "", "lcd": "", "due": "" },
+
+    { "in": "   ...   ", "full": "", "lcd": "", "due": "" }
+  ]
+}
