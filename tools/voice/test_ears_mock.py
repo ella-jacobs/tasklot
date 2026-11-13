@@ -85,3 +85,4 @@ chk("daemon still alive through garbage (reached scenario 5)",
 chk("commands are newline-terminated", sent.count("\n") >= len(cmds))
 print("\nCOMMANDS SENT:", cmds)
 print("\nRESULT:", "ALL PASS" if ok else "FAILURES ABOVE")
+sys.exit(0 if ok else 1)
