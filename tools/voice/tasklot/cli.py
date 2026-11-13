@@ -30,6 +30,8 @@ EXIT_ERROR = 1
 EXIT_PORT = 2   # the serial port could not be opened (E-35, E-39)
 EXIT_INTERRUPTED = 130  # shell convention for Ctrl-C
 
+PUSH_NEEDS_PORT = "--push needs --port. List them:  ls /dev/cu.usbmodem*"
+
 
 def build_parser() -> argparse.ArgumentParser:
     """The top-level parser with the `ears` and `voice` subcommands."""
@@ -143,6 +145,11 @@ def run_voice(args: argparse.Namespace, settings: Settings,
         if args.latest_memo:
             tool.add_audio(tool.latest_memo(), car)
         if args.watch:
+            if args.push and not args.port:
+                # Checked before watching: the watcher never returns, so a
+                # missing port would otherwise mean it silently never pushes.
+                print(PUSH_NEEDS_PORT, file=sys.stderr)
+                return EXIT_ERROR
             tool.watch(Path(args.watch), push_port=args.port if args.push else None)
             return EXIT_OK
         if tool.has_tasks:
@@ -150,7 +157,7 @@ def run_voice(args: argparse.Namespace, settings: Settings,
             print(f"  saved {settings.tasks_file}")
         if args.push:
             if not args.port:
-                print("--push needs --port. List them:  ls /dev/cu.usbmodem*", file=sys.stderr)
+                print(PUSH_NEEDS_PORT, file=sys.stderr)
                 return EXIT_ERROR
             tool.push(args.port)
         elif not tool.has_tasks and parser is not None:

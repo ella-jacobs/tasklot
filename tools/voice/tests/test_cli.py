@@ -23,6 +23,7 @@ from tasklot.logs import silent
 from tests.fakes import FakeClock, FakePort, PortFactory
 
 VOICE_DIR = Path(__file__).resolve().parent.parent
+SCRIPT_TIMEOUT_S = 30   # a script that hangs (a watcher that never exits) fails, not stalls
 
 # Pinned from the pre-refactor tasklot_voice.py (the "saved" path line differs per run).
 FIRST_RUN = """
@@ -184,7 +185,7 @@ class CommandLineTest(unittest.TestCase):
 
     def run_script(self, *args):
         return subprocess.run([sys.executable, *args], cwd=VOICE_DIR, env=self.env,
-                              capture_output=True, text=True)
+                              capture_output=True, text=True, timeout=SCRIPT_TIMEOUT_S)
 
     def test_tasklot_voice_text_runs_match_original(self):
         first = self.run_script("tasklot_voice.py", "--text", "remind me to charge the battery pack tonight")
@@ -205,6 +206,12 @@ class CommandLineTest(unittest.TestCase):
     def test_push_without_port_fails_clearly(self):
         self.run_script("tasklot_voice.py", "--text", "call mom")
         result = self.run_script("tasklot_voice.py", "--push")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("--push needs --port", result.stderr)
+
+    def test_watch_push_without_port_fails_before_watching(self):
+        # Without --port the watcher would run forever and never push.
+        result = self.run_script("tasklot_voice.py", "--watch", self.tmp.name, "--push")
         self.assertEqual(result.returncode, 1)
         self.assertIn("--push needs --port", result.stderr)
 
