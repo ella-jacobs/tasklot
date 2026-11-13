@@ -83,16 +83,23 @@ listed in [`tools/voice/tasklot/config.py`](tools/voice/tasklot/config.py).
 make test
 ```
 
-This needs only `python3` and `node`. It runs the voice pipeline's unit tests
-(`python3 -m unittest`, about 150 tests: every edge case in `DESIGN.md` section 5 that
-can be checked on a laptop), the `node --test` suite for `condense.js`, a cross-language
-test that requires the Python and JavaScript condensers to agree on thousands of inputs,
-and a check that the simulator's inlined copy of the condenser is current. It also runs
-the ears daemon against a fake board on a pseudo-terminal and checks every byte it
-writes; that test is reported as skipped if `pyserial` is not installed (run
-`make test PYTHON=/path/to/python3` with an interpreter that has it). No test calls an
-LLM or needs a microphone, a model, or a board. `make firmware` compiles every sketch if
-`arduino-cli` is installed.
+This needs only `python3`, `node` and a C++17 compiler (on macOS, the Xcode command line
+tools). It runs:
+
+- the firmware host tests: the real sketch built on the laptop against fakes of the
+  Arduino libraries, with unit tests per class and 14 whole-sketch scenarios compared
+  byte for byte with recorded transcripts (see the Firmware section below);
+- the voice pipeline's unit tests (`python3 -m unittest`, about 150 tests covering every
+  edge case in `DESIGN.md` section 5 that can be checked on a laptop);
+- the `node --test` suite for `condense.js`, a cross-language test that requires the
+  Python and JavaScript condensers to agree on thousands of inputs, and a check that the
+  simulator's inlined copy of the condenser is current;
+- the ears daemon against a fake board on a pseudo-terminal, checking every byte it
+  writes. This one is reported as skipped if `pyserial` is not installed (run
+  `make test PYTHON=/path/to/python3` with an interpreter that has it).
+
+No test calls an LLM or needs a microphone, a model, or a board. `make firmware` compiles
+every sketch for the Mega 2560 if `arduino-cli` is installed.
 
 Hardware checks that cannot be automated are listed in `DESIGN.md`, section 7.
 

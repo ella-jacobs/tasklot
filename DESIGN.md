@@ -480,7 +480,8 @@ These cannot be automated. Run them with `firmware/tasklot_full_v2` flashed and
 ## 8. Running the automated checks
 
 ```bash
-make test        # voice pipeline: python3 -m unittest + node --test (ears end-to-end test needs pyserial)
+make test        # voice pipeline (python3 -m unittest + node --test; the ears end-to-end test
+                 # needs pyserial) and the firmware host tests (firmware/tests/run_tests.sh)
 make firmware    # compile every sketch for the Mega 2560 (needs arduino-cli + MFRC522 + LiquidCrystal I2C)
 ```
 
