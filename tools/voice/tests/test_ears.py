@@ -235,6 +235,37 @@ class RobustnessTest(EarsTestCase):
         self.assertIn("[handle] !! TypeError", self.log.text())
 
 
+class FailingRecorder(NullRecorder):
+    """A recorder whose ffmpeg never starts (E-05)."""
+
+    def start(self, car, order_id):
+        return None
+
+    def is_running(self):
+        return False
+
+
+class StartupAndFailureTest(EarsTestCase):
+    """E-05 at the daemon level, and E-06's one-time startup report."""
+
+    def test_failed_recording_sends_nothing(self):
+        self.make()
+        self.ears.recorder = FailingRecorder(Path("/nowhere"), log=self.log)
+        self.board("SPEAKER  CAR 2 ordering", "SPACE 1  <- CAR 2 parked")
+        self.assertEqual(self.ears.drain_jobs(), 0)
+        self.assertEqual(self.sent.sent, [])
+        self.assertIn("nothing was recorded", self.log.text())
+
+    def test_startup_report_lists_problems_once(self):
+        class Broken:
+            def problems(self):
+                return ["whisper-cli not found on PATH"]
+
+        self.make(transcriber=Broken())
+        self.ears.startup_report()
+        self.assertEqual(self.log.lines, ["[whisper] !! whisper-cli not found on PATH"])
+
+
 class SideChannelTest(EarsTestCase):
     """The command file, RESET, and re-sending labels after a reconnect."""
 
