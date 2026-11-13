@@ -10,9 +10,10 @@
  *   due  -> a due hint pulled out of the text ("friday", "4pm"), or ""
  *   raw  -> the ASCII-flattened input
  *
- * The Condenser class here mirrors tasklot/condenser.py rule for rule. Both are
- * checked against tools/voice/cases.json, and a cross-language test feeds the
- * same inputs to both, so the simulator and the LCD cannot drift apart.
+ * This file is the reference version of the rules; the Python Condenser in
+ * tasklot/condenser.py mirrors it rule for rule. Both are checked against
+ * tools/voice/cases.json, and a cross-language test feeds the same inputs to
+ * both, so the simulator and the LCD cannot drift apart.
  *
  * Runs unchanged in the browser (<script src>, exposes window.TaskLotCondense)
  * and in node (require). The simulator page carries an inlined copy; after any

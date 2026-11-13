@@ -1,7 +1,7 @@
 """Labeler: an optional LLM label upgrade, behind hallucination guards.
 
-The rule-based Condenser truncates from the front, so "homework due at midnight
-for engines 21" becomes "Homework due", dropping the two things that matter. An
+The rule-based Condenser keeps only the front of the sentence, so "homework due
+at midnight for engines 21" becomes "Homework due", dropping the two things that matter. An
 LLM keeps the subject and the course code ("ENGS21 HW MIDNITE"). It costs about
 8 s, which is acceptable because the rule-based label is already on the LCD;
 the better one replaces it a beat later.

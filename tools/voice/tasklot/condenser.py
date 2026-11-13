@@ -9,10 +9,10 @@ character LCD (two characters go to the "1>" priority marker, leaving 18).
     due  -> a due hint pulled out of the text ("friday", "4pm"), or ""
     raw  -> the ASCII-flattened input
 
-condense.js is canonical for the browser and mirrors this class rule for rule.
-Both are checked against tools/voice/cases.json, and a cross-language test feeds
-the same inputs to both, so the LCD and the simulator can never quietly disagree
-about what a memo said.
+condense.js (the browser version) is the reference, and this class mirrors it
+rule for rule. Both are checked against tools/voice/cases.json, and a
+cross-language test feeds the same inputs to both, so the LCD and the simulator
+can never quietly disagree about what a memo said.
 
 Used by Ears (live daemon) and the offline `voice` CLI command.
 """

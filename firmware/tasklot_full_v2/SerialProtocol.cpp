@@ -1,6 +1,6 @@
 // SerialProtocol.cpp - command parsing and the exact event strings. See SerialProtocol.h.
 //
-// Every string here is in F() so it stays in flash: the Mega has 8 KB of SRAM and the
+// Every printed string here is in F() so it stays in flash: the Mega has 8 KB of SRAM and the
 // boot banner alone would take a large share of it.
 
 #include "SerialProtocol.h"

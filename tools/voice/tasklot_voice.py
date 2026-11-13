@@ -18,7 +18,7 @@ script (override with TASKLOT_TASKS_FILE).
     python3 tasklot_voice.py --watch inbox/
 
     # push tasks.json to the board (close the simulator and the daemon first)
-    python3 tasklot_voice.py --push --port /dev/cu.usbmodem14101
+    python3 tasklot_voice.py --push --port /dev/cu.usbmodem101
 
 This script is the original command, kept working; the code lives in the
 tasklot package (tasklot/offline.py) and is the same as `python3 -m tasklot voice`.

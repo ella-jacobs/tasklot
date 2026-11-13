@@ -58,7 +58,7 @@ def add_voice_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--watch", metavar="DIR", help="watch DIR for new recordings")
     parser.add_argument("--car", type=int, help="assign to car N (default: next free)")
     parser.add_argument("--push", action="store_true", help="send tasks.json to the Mega")
-    parser.add_argument("--port", help="serial port, e.g. /dev/cu.usbmodem14101")
+    parser.add_argument("--port", help="serial port, e.g. /dev/cu.usbmodem101")
     parser.add_argument("--clear", action="store_true", help="empty tasks.json")
 
 
