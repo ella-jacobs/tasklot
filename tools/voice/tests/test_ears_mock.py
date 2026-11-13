@@ -3,7 +3,9 @@
 Starts `tasklot_ears.py` as a real subprocess pointed at one end of a pty, plays
 the board's exact serial lines into the other end, and checks the bytes the
 daemon writes back. Transcription is faked with TASKLOT_FAKE_TRANSCRIPT and the
-LLM is turned off, so no microphone, model, or network is involved.
+LLM is turned off, so no microphone, model, or network is involved. The daemon's
+side-channel files and recordings go to a temporary directory, so the test never
+touches the real /tmp/tasklot_* files a running daemon would use.
 
 Skipped (not failed) when pyserial is not installed, because the daemon needs it
 to open the port.
@@ -14,6 +16,7 @@ import pty
 import select
 import subprocess
 import sys
+import tempfile
 import termios
 import time
 import unittest
@@ -63,11 +66,15 @@ class EarsAgainstFakeBoardTest(unittest.TestCase):
         attrs[3] = attrs[3] & ~termios.ECHO & ~termios.ECHONL & ~termios.ICANON
         termios.tcsetattr(slave, termios.TCSANOW, attrs)
         self.slave = slave
+        self.scratch = tempfile.TemporaryDirectory()
         env = dict(os.environ,
                    TASKLOT_PORT=os.ttyname(slave),
                    TASKLOT_FAKE_TRANSCRIPT=FAKE_TRANSCRIPT,
                    TASKLOT_LLM="0",
-                   TASKLOT_RESET_DELAY="0.5")
+                   TASKLOT_RESET_DELAY="0.5",
+                   TASKLOT_REC_DIR=self.scratch.name,
+                   TASKLOT_SAY_FILE=os.path.join(self.scratch.name, "say.txt"),
+                   TASKLOT_CMD_FILE=os.path.join(self.scratch.name, "cmd.txt"))
         self.proc = subprocess.Popen([sys.executable, EARS_SCRIPT], env=env,
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                      text=True)
@@ -83,6 +90,7 @@ class EarsAgainstFakeBoardTest(unittest.TestCase):
             self.proc.communicate()
         os.close(self.master)
         os.close(self.slave)
+        self.scratch.cleanup()
 
     def board_says(self, line, wait):
         """Write one board line (with the firmware's CRLF) and collect replies.
