@@ -315,9 +315,9 @@ module uls_deck_sheet_extras() {
     // Two side walls stood on end, in the strip beside the deck.
     translate([334,0]) square([38,264]);
     translate([378,0]) square([38,264]);
-    // Corner blocks. README step 5 wants "square blocks or small angle brackets inside
-    // the corners", and step 6 screws the bottom panel into them. Laminate five 25 mm
-    // squares per corner for a ~15.9 mm post. 20 squares = 4 corners.
+    // Corner blocks: the assembly puts a square block inside each corner of the walls, and the
+    // bottom panel screws into them. Laminate five 25 mm squares per corner for a
+    // ~15.9 mm post. 20 squares = 4 corners.
     for (r=[0:3]) for (c=[0:4])
         translate([422 + c*29, r*29]) square([25,25]);
     // Plywood LCD frame, as insurance. At the time nobody had confirmed the
