@@ -109,6 +109,14 @@ class OrderFlowTest(EarsTestCase):
         self.board("PICKUP   CAR 3 collected", "PLAYBACK CAR 3 reading back")
         self.assertEqual(self.sent.sent, ["CAR 3 Email the Prof"])
 
+    def test_park_and_leave_log_the_priority_order(self):
+        # The laptop's view of the lot, so it can be checked against the board's.
+        self.make()
+        self.board("TASK 5 Call mom", "SPACE 1  <- CAR 5 parked", "SPACE 3  <- CAR 2 parked")
+        self.assertIn("[lot] 1>Call mom | 2>- | 3>CAR 2 | 4>-", self.log.text())
+        self.board("SPACE 1  -> CAR 5 left")
+        self.assertEqual(self.log.lines[-1], "[lot] 1>- | 2>- | 3>CAR 2 | 4>-")
+
     def test_park_without_order_sends_nothing(self):
         self.make()
         self.board("SPACE 4  <- CAR 1 parked")

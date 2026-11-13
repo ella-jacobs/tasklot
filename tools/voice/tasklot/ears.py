@@ -133,6 +133,7 @@ class Ears:
                 self._on_parked(event.space, event.car)
             elif isinstance(event, Left):
                 self.lot.leave(event.space, event.car)
+                self._log_lot()
             elif isinstance(event, Playback):
                 self._on_playback(event.car)
             elif isinstance(event, Collected):
@@ -163,6 +164,13 @@ class Ears:
         if self.lot.recording is not None:
             self._finish_order()
         self.lot.park(space, car)
+        self._log_lot()
+
+    def _log_lot(self) -> None:
+        """Log the laptop's view of the lot in priority order, one entry per
+        space, so it can be checked against the rows the board prints."""
+        rows = Condenser.lot_lines(self.lot.rows())
+        self.log("[lot] " + " | ".join(row.rstrip() for row in rows))
 
     def _on_task_echo(self, car: int, label: str) -> None:
         """The board echoed the label it stored for `car`."""

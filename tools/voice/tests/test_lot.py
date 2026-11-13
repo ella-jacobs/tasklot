@@ -41,6 +41,16 @@ class SpacesTest(unittest.TestCase):
         self.assertEqual([r.strip() for r in Condenser.lot_lines(rows)],
                          ["1>Call mom", "2>Email the Prof", "3>-", "4>CAR 7"])
 
+    def test_rows_prefer_the_label_the_board_shows(self):
+        # After an LLM upgrade the board shows the label, not the task's
+        # rule-based lcd, so rows() must agree with label().
+        lot = Lot()
+        lot.set_task(make_task(3, "email the professor"))
+        lot.set_label(3, "EMAIL PROF RE PROJ")
+        lot.park(1, 3)
+        self.assertEqual(lot.rows()[0], "EMAIL PROF RE PROJ")
+        self.assertEqual(lot.rows()[0], lot.label(3))
+
     def test_move_releases_old_space(self):
         # E-26: one car, one space; moving reorders, never duplicates.
         lot = Lot()

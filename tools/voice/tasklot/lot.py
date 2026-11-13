@@ -175,10 +175,12 @@ class Lot:
                 board (the offline CLI uses cars 1-4). None uses the parked cars.
 
         Returns:
-            list: per row, the car's Task, else its label, else "CAR n" for a
-            parked car the laptop knows nothing about (as the firmware shows),
-            else None for an empty space. With `order`, a car without a task is
-            None, as the original preview printed it.
+            list: per row, the label the board shows for the car, else its Task,
+            else "CAR n" for a parked car the laptop knows nothing about (as the
+            firmware shows), else None for an empty space. The label comes
+            first for the same reason as in label(): after an LLM upgrade it is
+            what the board displays. With `order`, a car without a task is None,
+            as the original preview printed it.
         """
         if order is not None:
             return [self.tasks.get(car) for car in order]
@@ -187,7 +189,7 @@ class Lot:
             if car is None:
                 out.append(None)
             else:
-                out.append(self.tasks.get(car) or self.labels.get(car) or f"CAR {car}")
+                out.append(self.labels.get(car) or self.tasks.get(car) or f"CAR {car}")
         return out
 
     def _space_index(self, space: int) -> int:
