@@ -163,7 +163,7 @@ def write_pdf(path, pages):
         content = zlib.compress(page_stream(groups), 9)
         objs[n] = (b"<< /Length %d /Filter /FlateDecode >>\nstream\n" % len(content)
                    + content + b"\nendstream")
-        objs[n + 1] = ("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %.4f %.4f] "
+        objs[n + 1] = ("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %g %g] "
                        "/Contents %d 0 R /Resources << >> >>" % (W, H, n)).encode()
         kids.append(n + 1); n += 2
     objs[1] = b"<< /Type /Catalog /Pages 2 0 R >>"
