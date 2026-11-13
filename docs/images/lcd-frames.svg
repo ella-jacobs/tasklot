@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="812" height="426" viewBox="0 0 812 426">
+  <title>TaskLot LCD, one frame per gesture, from the firmware golden transcripts</title>
+  <style>
+    text { font-family: 'Space Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace; font-size: 15px; fill: #EAF4FF; }
+    text.cap { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 700; fill: #1A1A1A; text-anchor: middle; }
+    text.sub { font-family: Inter, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12.5px; fill: #5A5346; text-anchor: middle; }
+  </style>
+  <rect width="100%" height="100%" rx="12" fill="#F3F4F6"/>
+  <rect x="24" y="24" width="236" height="132" rx="8" fill="#22242A"/>
+  <rect x="34" y="34" width="216" height="112" rx="3" fill="#0B2E6B"/>
+  <text x="46" y="62" textLength="192" lengthAdjust="spacing" xml:space="preserve"> ORDER IN PROGRESS  </text>
+  <text x="46" y="84" textLength="192" lengthAdjust="spacing" xml:space="preserve">       CAR 1        </text>
+  <text x="46" y="106" textLength="192" lengthAdjust="spacing" xml:space="preserve">    listening...    </text>
+  <text x="46" y="128" textLength="192" lengthAdjust="spacing" xml:space="preserve"> park it when done  </text>
+  <text x="142" y="176" class="cap">1. Blank car at the speaker</text>
+  <text x="142" y="194" class="sub">the laptop starts recording</text>
+  <rect x="288" y="24" width="236" height="132" rx="8" fill="#22242A"/>
+  <rect x="298" y="34" width="216" height="112" rx="3" fill="#0B2E6B"/>
+  <text x="310" y="62" textLength="192" lengthAdjust="spacing" xml:space="preserve">                    </text>
+  <text x="310" y="84" textLength="192" lengthAdjust="spacing" xml:space="preserve">    ORDER IS IN     </text>
+  <text x="310" y="106" textLength="192" lengthAdjust="spacing" xml:space="preserve">                    </text>
+  <text x="310" y="128" textLength="192" lengthAdjust="spacing" xml:space="preserve">                    </text>
+  <text x="406" y="176" class="cap">2. Park it</text>
+  <text x="406" y="194" class="sub">parking is the stop gesture</text>
+  <rect x="552" y="24" width="236" height="132" rx="8" fill="#22242A"/>
+  <rect x="562" y="34" width="216" height="112" rx="3" fill="#0B2E6B"/>
+  <text x="574" y="62" textLength="192" lengthAdjust="spacing" xml:space="preserve">1&gt;Email the Prof    </text>
+  <text x="574" y="84" textLength="192" lengthAdjust="spacing" xml:space="preserve">2&gt;-                 </text>
+  <text x="574" y="106" textLength="192" lengthAdjust="spacing" xml:space="preserve">3&gt;-                 </text>
+  <text x="574" y="128" textLength="192" lengthAdjust="spacing" xml:space="preserve">4&gt;-                 </text>
+  <text x="670" y="176" class="cap">3. The label arrives</text>
+  <text x="670" y="194" class="sub">space 1 is the top priority</text>
+  <rect x="156" y="224" width="236" height="132" rx="8" fill="#22242A"/>
+  <rect x="166" y="234" width="216" height="112" rx="3" fill="#0B2E6B"/>
+  <text x="178" y="262" textLength="192" lengthAdjust="spacing" xml:space="preserve">     YOUR ORDER     </text>
+  <text x="178" y="284" textLength="192" lengthAdjust="spacing" xml:space="preserve">Buy milk and eggs   </text>
+  <text x="178" y="306" textLength="192" lengthAdjust="spacing" xml:space="preserve">and also the bread  </text>
+  <text x="178" y="328" textLength="192" lengthAdjust="spacing" xml:space="preserve">from the corner     </text>
+  <text x="274" y="376" class="cap">4. Loaded car at the speaker</text>
+  <text x="274" y="394" class="sub">the whole task, 3 rows a page</text>
+  <rect x="420" y="224" width="236" height="132" rx="8" fill="#22242A"/>
+  <rect x="430" y="234" width="216" height="112" rx="3" fill="#0B2E6B"/>
+  <text x="442" y="262" textLength="192" lengthAdjust="spacing" xml:space="preserve">                    </text>
+  <text x="442" y="284" textLength="192" lengthAdjust="spacing" xml:space="preserve">     ALL DONE!!     </text>
+  <text x="442" y="306" textLength="192" lengthAdjust="spacing" xml:space="preserve">                    </text>
+  <text x="442" y="328" textLength="192" lengthAdjust="spacing" xml:space="preserve">                    </text>
+  <text x="538" y="376" class="cap">5. Through the pickup lane</text>
+  <text x="538" y="394" class="sub">done; the car is blank again</text>
+</svg>
