@@ -429,10 +429,10 @@
    */
   function ascii(s) {
     return String(s || '')
-      .replace(/[‘’ʼ]/g, "'")
-      .replace(/[“”]/g, '"')
-      .replace(/[–—]/g, '-')
-      .replace(/…/g, '...')
+      .replace(/[\u2018\u2019\u02bc]/g, "'")
+      .replace(/[\u201c\u201d]/g, '"')
+      .replace(/[\u2013\u2014]/g, '-')
+      .replace(/\u2026/g, '...')
       .replace(/[^\x20-\x7E]/g, '')
       .replace(/\s+/g, ' ')
       .trim();

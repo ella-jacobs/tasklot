@@ -111,19 +111,19 @@ class NonAsciiTest(unittest.TestCase):
     """E-17: the LCD ROM is ASCII; smart punctuation maps, everything else drops."""
 
     def test_smart_punctuation_is_flattened(self):
-        self.assertEqual(ascii_only("don’t “forget” – now…"),
+        self.assertEqual(ascii_only("don\u2019t \u201cforget\u201d \u2013 now\u2026"),
                          "don't \"forget\" - now...")
 
     def test_accents_and_emoji_are_dropped(self):
         # Current behaviour, kept deliberately: accents are dropped, not
         # transliterated (DESIGN.md E-17 leaves that decision open).
-        self.assertEqual(ascii_only("café \U0001F600 run"), "caf run")
+        self.assertEqual(ascii_only("caf\u00e9 \U0001F600 run"), "caf run")
 
     def test_fully_non_ascii_transcript_is_empty(self):
-        self.assertEqual(Condenser().condense("你好世界").lcd, "")
+        self.assertEqual(Condenser().condense("\u4f60\u597d\u4e16\u754c").lcd, "")
 
     def test_label_is_always_printable_ascii(self):
-        got = Condenser().condense("Email the école about the ‘poster’")
+        got = Condenser().condense("Email the \u00e9cole about the \u2018poster\u2019")
         self.assertTrue(all(" " <= ch <= "~" for ch in got.lcd + got.full))
 
 

@@ -108,8 +108,8 @@ SENTENCE_BREAK = re.compile(r"[.!?]\s+[A-Z]")
 
 # The HD44780 character ROM is ASCII. Smart quotes and dashes would render as
 # garbage blocks, so they are flattened before anything else.
-SMART_PUNCTUATION = {"‘": "'", "’": "'", "ʼ": "'", "“": '"',
-                     "”": '"', "–": "-", "—": "-", "…": "..."}
+SMART_PUNCTUATION = {"\u2018": "'", "\u2019": "'", "\u02bc": "'", "\u201c": '"',
+                     "\u201d": '"', "\u2013": "-", "\u2014": "-", "\u2026": "..."}
 
 VOWELS = "aeiouAEIOU"
 

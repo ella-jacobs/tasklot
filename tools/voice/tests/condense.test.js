@@ -61,9 +61,9 @@ test('E-19: exactly 18 untouched, 19 is devowelled', () => {
 });
 
 test('E-17: smart punctuation maps to ASCII, other non-ASCII drops', () => {
-  assert.equal(C.ascii('don’t “forget” – now…'), 'don\'t "forget" - now...');
-  assert.equal(C.ascii('café \u{1F600} run'), 'caf run');
-  assert.equal(C.condense('你好世界').lcd, '');
+  assert.equal(C.ascii('don\u2019t \u201cforget\u201d \u2013 now\u2026'), 'don\'t "forget" - now...');
+  assert.equal(C.ascii('caf\u00e9 \u{1F600} run'), 'caf run');
+  assert.equal(C.condense('\u4f60\u597d\u4e16\u754c').lcd, '');
 });
 
 test('lotLines returns four lines of exactly LCD_WIDTH', () => {

@@ -29,11 +29,14 @@ EDGE_INPUTS = [
     "? Hello there. Next thing",
     "! email the professor. Then call mom",
     "by friday email Bob by friday",
+    # The due text also appears inside an earlier word; JS String.replace
+    # removes the first occurrence, not the match, and Python mirrors that.
+    "call standby friday crew by friday",
     "on monday, on monday call the dentist",
-    "Don’t forget to “print” the poster — today…",
-    "café meeting with José about the résumé",
+    "Don\u2019t forget to \u201cprint\u201d the poster \u2014 today\u2026",
+    "caf\u00e9 meeting with Jos\u00e9 about the r\u00e9sum\u00e9",
     "\U0001F600 buy groceries \U0001F6D2",
-    "你好世界",
+    "\u4f60\u597d\u4e16\u754c",
     "call\tmom\nnow",
     "Supercalifragilisticexpialidociousness homework",
     "Charge battery now",
