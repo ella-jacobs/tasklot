@@ -19,9 +19,8 @@ build/laser/render.sh
 
 Both run from any directory and find OpenSCAD through `OPENSCAD_BIN`, then `PATH`, then
 the usual macOS app locations. With OpenSCAD 2021.01 a full `make_uls_files.py` run takes
-a few seconds and reproduces every file in `exports/uls/` byte for byte. `render.sh`
-reproduces every `exports/sheet_*` file except `sheet_3_cut`, which was exported before
-the restaurant roof gained its sign socket; re-running `render.sh` updates it.
+a few seconds and reproduces every file in `exports/uls/` byte for byte, and `render.sh`
+reproduces every `exports/sheet_*` file the same way.
 
 The laser conversion was a shared effort with a teammate (see the credits in the root
 README), and was AI-assisted (Claude, Anthropic). Verify dimensions and laser settings
