@@ -1,21 +1,14 @@
 # TaskLot — design
 
-This document describes how TaskLot works today, the exact serial protocol between the
-board and the laptop, the edge cases and failure modes the system has to handle, and the
-target object-oriented structure for the refactor. The edge-case section is the test
-spec: every refactored component should have tests that pin the behaviour described
-there, or a written reason why it cannot be tested automatically.
+How TaskLot works: the interaction, the exact serial protocol between the board and the
+laptop, the state each side keeps, the edge cases and failure modes the system handles,
+and the architecture of the code in this repo. The edge-case list (section 5) is the test
+spec: each case is pinned by an automated test, or its row says why it cannot be.
 
-Source of truth for "current behaviour" is the code at the time of import:
-`firmware/tasklot_full_v2/tasklot_full_v2.ino`, `tools/voice/tasklot_ears.py`,
-`tools/voice/condense.{js,py}`, `tools/voice/tasklot_voice.py`, and
-`tools/sim/tasklot-sim.html`.
-
-**Status.** The refactor described in section 6 is done. Sections 3 to 5 (and the
-"Today" column of every edge case) describe the code as it was imported, before the
-refactor; section 6.4 records how the voice pipeline was actually built and which
-"Fix" items changed, and [`firmware/README.md`](firmware/README.md) does the same for
-the firmware (architecture, memory use, and the original's quirks, kept or fixed).
+The code began as one Arduino sketch and a few procedural Python scripts and was then
+refactored into the classes in section 6, keeping the serial protocol byte for byte.
+[Appendix A](#appendix-a-history-before-the-refactor) records what changed: how each
+fixed edge case behaved before, and the test baseline at import.
 
 ---
 
@@ -55,12 +48,12 @@ UID -> car number, and car number -> 18-character label. The laptop holds the fu
             |  ^
    events   |  |  commands        USB serial, 9600 baud, one line per message
             v  |
-  Laptop: tools/voice/tasklot_ears.py
+  Laptop: the tasklot package in tools/voice (tasklot_ears.py starts the Ears daemon)
             |
-            +-- ffmpeg (records the mic to a 16 kHz mono WAV)
-            +-- whisper.cpp `whisper-cli` (local transcription)
-            +-- clean_transcript() -> condense() (rule-based, 18-char label)
-            +-- optional `claude -p` label upgrade, with hallucination guards
+            +-- Recorder: ffmpeg records the mic to a 16 kHz mono WAV
+            +-- Transcriber: whisper.cpp `whisper-cli` (local transcription)
+            +-- TranscriptCleaner -> Condenser (rule-based, 18-char label)
+            +-- Labeler: optional `claude -p` label upgrade, with hallucination guards
 
   Alternative laptop sides, same protocol:
     tools/sim/tasklot-sim.html   browser simulator; can also drive a real board over Web Serial
@@ -86,7 +79,7 @@ all recording, transcription and shortening.
 
 ---
 
-## 3. Serial protocol (as the current code uses it)
+## 3. Serial protocol
 
 9600 baud, 8N1. Every message is one line. The board ends lines with `\r\n`
 (`Serial.println`); the laptop sends `\n`. The board ignores `\r` on input.
@@ -103,8 +96,8 @@ numbers are 1-4.
 | Line (exact format) | When | Who parses it |
 |---|---|---|
 | `* NEW CAR registered -> CAR <n>   UID <hex bytes> ` | First sighting of a plausible new UID, on any reader. UID bytes are two-digit uppercase hex, each followed by a space. | sim (log only) |
-| `SPACE <s>  <- CAR <n> parked` | A car arrives on space `s`. | ears (stops recording if `n` is recording), sim |
-| `SPACE <s>  -> CAR <n> left` | A space goes quiet for `GONE_MS`, or the car arrived somewhere else, or it was collected. | sim |
+| `SPACE <s>  <- CAR <n> parked` | A car arrives on space `s`. | ears (closes any open order, updates occupancy), sim |
+| `SPACE <s>  -> CAR <n> left` | A space goes quiet for `GONE_MS`, or the car arrived somewhere else, or it was collected. | ears (updates occupancy), sim |
 | `SPEAKER  CAR <n> ordering` | A **blank** car passes the speaker. | ears (starts recording), sim |
 | `PLAYBACK CAR <n> reading back` | A car **with a label** passes the speaker. | ears (sends the full text), sim |
 | `PICKUP   CAR <n> collected` | Any car passes the pickup lane. | ears (forgets the car's text), sim |
@@ -179,12 +172,11 @@ bench as `3>Charge baCAR 4 Glu`). So every sender paces:
 
 | Sender | Pacing |
 |---|---|
-| `tasklot_ears.py` | One line per `send()`, under a lock, then `sleep(0.35)`. Non-ASCII is dropped by `encode("ascii", "ignore")`. |
+| `SerialLink` (the ears daemon and `tasklot_voice.py --push`) | One line per `send()`, under a lock, at least `SEND_PACING_S` (0.35 s) apart. Non-ASCII is dropped on the way out. |
 | `tasklot-sim.html` | A queue; the next line goes only after the board's reply ends (two rule lines, or `PONG`), or after 1.2 s. |
-| `tasklot_voice.py --push` | `sleep(0.08)` between lines (too short; see E-31). |
 
-Opening the serial port toggles DTR and **resets the Mega**. Every sender waits about
-2-3 s after opening before writing (`ears`: 3 s, `sim`: 2.2 s, `--push`: 2.0 s).
+Opening the serial port toggles DTR and **resets the Mega**. Every sender waits after
+opening before writing: `SerialLink` 3 s (`TASKLOT_RESET_DELAY`), the simulator 2.2 s.
 
 ---
 
@@ -192,16 +184,16 @@ Opening the serial port toggles DTR and **resets the Mega**. Every sender waits 
 
 ### 4.1 Board state (`tasklot_full_v2`)
 
-| State | Shape | Notes |
+| State | Owner | Notes |
 |---|---|---|
-| Car registry | up to 8 UIDs (`known[8][10]`, `knownLen[8]`, `carCount`) | Append-only until reset. Shared by all six readers. |
-| Labels | `taskOf[8][19]` | 18 characters + NUL. |
-| Occupancy | `occupant[4]` (car index or -1), `lastSeen[4]` | One car per space; one space per car. |
-| Lane debounce | `lastLaneCar[2]`, `lastLaneAt[2]` | `LANE_COOLDOWN_MS = 2000`. |
-| Interaction | `ordering` (car or -1), `playing` (car or -1) | At most one order and one read-back. |
-| Screen | `overlay` (`NONE`, `ORDERING`, `PLAYING`, `ANNOUNCE`), flash timers, `lotBuf[4][21]`, `shown[4][21]` | `paintScreen()` is the only code that draws. |
-| Full text | `fullText[121]`, `wrapLine[9][21]`, page index | Filled by `FULL*`. |
-| Persistence | EEPROM, magic `0x7A`, version 1, 243 bytes | Only with `#define REMEMBER 1` (ships 0). |
+| Car registry | `CarRegistry`: up to `MAX_CARS` (8) UIDs, in the order first seen | Append-only until reset. Shared by all six readers. |
+| Labels | `CarRegistry`: one label per car, `TASK_LEN` (18) characters + NUL | |
+| Occupancy | `ParkingLot`: the car on each space and when it last answered | One car per space; one space per car. |
+| Lane debounce | `LaneDebouncer`, one per lane | `LANE_COOLDOWN_MS = 2000`. |
+| Interaction | `OrderState` (owned by `TaskLot`): `ordering` and `playing` | At most one order and one read-back. |
+| Screen | `LcdView`: the overlay (`NONE`, `ORDERING`, `PLAYING`, `ANNOUNCE`), flash timers, the rendered lot and the rows on the glass | `LcdView` is the only code that draws. |
+| Full text | `ReadbackText`: up to 120 characters, word-wrapped into up to 9 rows of 20 | Filled by `FULL*`. |
+| Persistence | EEPROM, magic `0x7A`, version 1, 243 bytes | Only with `REMEMBER 1` in `config.h` (ships 0). |
 
 Main loop order, every ~60 ms: read commands -> poll spaces 1-4 (arrival if empty,
 presence ping if occupied) -> poll speaker lane -> poll pickup lane -> `delay(60)` ->
@@ -225,34 +217,39 @@ halted tag answers) and halted again. A space is reported empty only after
 | `ALL DONE!!` (flashes every 220 ms) | A labelled car is collected, or `DONE` on a labelled car | 1.6 s later |
 | `YOUR ORDER` (paged) | A labelled car passes the speaker, `PLAY`, or `FULLSHOW` | 12 s, any car parks, `LOT`, or the car is collected |
 
-### 4.2 Laptop state (`tasklot_ears.py`)
+### 4.2 Laptop state (the Ears daemon)
 
-| State | Meaning |
-|---|---|
-| `tasks[car]` | Full cleaned transcript the daemon itself produced. Lost on restart. |
-| `labels[car]` | The label the board is showing, learned from `TASK` echoes and from what was sent. |
-| `rec`, `rec_car`, `rec_t0` | The live ffmpeg process, which car it is for, when it started. |
-| `jobs` | Queue of `(car, wav_path)` for the transcription worker thread. |
+| State | Owner | Meaning |
+|---|---|---|
+| Tasks | `Lot.tasks` | car -> `Task`: the full cleaned transcript the daemon produced. Lost on restart. |
+| Labels | `Lot.labels` | The label the board is showing, learned from `TASK` echoes and from what was sent. |
+| Spaces | `Lot.spaces` | Which car is on each space, from `parked` / `left` events; logged after every change. |
+| Open order | `Lot.recording`, `Recorder` | Which car is being recorded; the ffmpeg process and when it started. |
+| Order ids | `Lot` | One per car, bumped by every new order and every pickup; a result started under an older id is dropped (E-12, E-13). |
+| Jobs | `Ears.jobs` | Queue of `Job(car, order_id, path)` for the transcription worker. |
 
-Threads: the main thread reads serial lines and dispatches; a worker thread transcribes and
-labels (transcription takes seconds and the read loop must keep draining the port); a
-recording capper closes any order still open after `MAX_REC = 60` s; two file watchers
-poll `/tmp/tasklot_say.txt` (text to speak with `say`) and `/tmp/tasklot_cmd.txt` (a
-board command to send; `RESET` clears the laptop's memory and sends `CLEAR`).
+Threads: the main thread reads serial lines and dispatches them (stopping ffmpeg and
+sending a read-back's paced lines happen there too); a worker thread transcribes and
+labels, because transcription takes seconds and the read loop must keep draining the
+port; a capper closes any order still open after `MAX_RECORDING_S` (60 s); an inbox
+thread polls the say file (text to speak with `say`) and the command file (a board
+command to send; `RESET` clears the laptop's memory and sends `CLEAR`). Both files live
+in the per-user temp directory by default (E-43).
 
 ### 4.3 The label pipeline
 
 ```
-WAV --whisper-cli--> raw transcript
-    --clean_transcript()--> drop [BLANK_AUDIO]/(music), split on ">>" and sentence ends,
-                            drop filler-only segments, strip leading greetings, de-duplicate
-    --condense()--> {full, lcd, due, raw}
+WAV --Transcriber (whisper-cli)--> raw transcript
+    --TranscriptCleaner.clean()--> drop [BLANK_AUDIO]/(music), split on ">>" and sentence
+                                   ends, drop filler-only segments, strip leading
+                                   greetings, de-duplicate
+    --Condenser.condense()--> {full, lcd, due, raw}
     --> send "CAR n <lcd>" immediately
-    --llm_label()--> optional better label, only if it passes every guard
+    --Labeler.label()--> optional better label, only if it passes every guard
     --> send "CAR n <better>" if it differs
 ```
 
-`condense()` stages, each running only while the text is still too long (width 18):
+`Condenser.condense()` stages, each running only while the text is still too long (width 18):
 disfluency removal (looped), due-hint extraction (`by Friday`, `at 4pm`, `tonight` ...),
 intent-prefix removal (`I need to`, `remind me to` ...), first sentence only, then for the
 LCD: cut at a reason clause (`about`, `because`, `whether` ...), drop trailing
@@ -261,219 +258,204 @@ prepositional phrases (never below two words), abbreviate (`professor` -> `Prof`
 and finally truncate at a word boundary if that keeps at least 55 % of the width. No
 ellipsis: the HD44780 has no glyph for it and it would cost 3 characters.
 
-`condense.js` is canonical and runs in node and the browser; the Python `Condenser`
-(`tasklot/condenser.py`, with `condense.py` kept as its command-line front door) mirrors it.
+`condense.js` is the reference version and runs in node and the browser; the Python
+`Condenser` (`tasklot/condenser.py`, with `condense.py` as its command-line front door)
+mirrors it rule for rule, and a cross-language test feeds both the same inputs.
 Both are checked against `tools/voice/cases.json`. The simulator carries an inlined copy
 of `condense.js` between `BEGIN`/`END` markers, regenerated by `sync_page.py`.
 
-LLM label guards (`tasklot_ears.py`): skipped when the cleaned transcript has fewer than
+LLM label guards (`Labeler`): skipped when the cleaned transcript has fewer than
 3 content words; output is collapsed to one line, stripped of quotes and a trailing
 period, ASCII-filtered, and trimmed word-by-word to 18 characters; rejected if it shares
 no word (or 3-letter prefix) with the transcript (`unrelated`), or if it contains a
-time/date word or digit that the transcript does not (`invented`). Any exception or
-timeout (`TASKLOT_LLM_TIMEOUT`, default 25 s) falls back to the rule-based label.
+time/date word or digit that the transcript does not (`invented`). Any exception,
+timeout (`TASKLOT_LLM_TIMEOUT`, default 25 s) or non-zero exit falls back to the
+rule-based label. The `claude` CLI runs with no tools and without saving the session.
 
 ---
 
 ## 5. Edge cases and failure modes
 
-Each row says what happens **today** and what the refactor should guarantee. "Keep"
-means the current behaviour is correct and needs a test pinning it. "Fix" means current
-behaviour is a known gap; the refactor should change it and test the new behaviour.
-"Manual" means it can only be checked on hardware (see section 7).
+Each row says what the code does now, and its status:
+
+- **Tested**: pinned by an automated test (Python, node, or the firmware host tests).
+- **Fixed**: the original code had a gap here; the refactor changed it, and a test pins
+  the new behaviour. [Appendix A](#appendix-a-history-before-the-refactor) has the old
+  behaviour.
+- **Manual**: can only be checked on hardware (the item number in section 7).
+- **Open** or **known gap**: an undecided question (section 9), or a limitation kept on
+  purpose.
 
 ### Recording and transcription
 
-| # | Case | Today | Target |
+| # | Case | Now | Status |
 |---|---|---|---|
-| E-01 | Silent or near-empty recording | `transcribe()` returns `""` if the WAV is missing or under 8000 bytes; worker logs "nothing transcribed" and sends nothing. The car keeps showing `CAR n`. | Keep. Test with a fake transcriber returning `""`. |
-| E-02 | Transcript is only filler (`"Hello?"`, `"Um. Okay."`, `[BLANK_AUDIO]`) | `clean_transcript()` returns empty or punctuation only; worker sends nothing. | Keep. Unit-test `clean_transcript` on these inputs. |
-| E-03 | Car parked within 0.6 s of ordering | `stop_recording_proc()` sleeps until `MIN_HOLD` has passed, because stopping ffmpeg during device init can produce no file at all. | Keep, with the hold injectable so tests do not sleep. |
-| E-04 | ffmpeg will not stop gracefully | `q` on stdin, then SIGINT, then SIGKILL (logs that the WAV may be truncated). | Keep the escalation; test with a fake process. |
-| E-05 | ffmpeg missing or fails to start | Logged; `rec` stays `None`. On park, the old `/tmp/tasklot_order_car<n>.wav` from a **previous** order (if any) is transcribed and becomes this car's task. | Fix: delete or uniquely name the WAV per order; a failed start must lead to "nothing recorded", never a stale file. |
-| E-06 | `whisper-cli` or the model missing | `subprocess` raises, caught, returns `""`, logs `[whisper] failed`. | Keep, but check for the binary and model at startup and log once, clearly. |
-| E-07 | Whisper hangs | 90 s timeout, then `""`. | Keep; timeout as a named constant. |
-| E-08 | Car never parked after ordering | Capper stops recording after 60 s and transcribes it for that car. | Keep. Test with an injected clock. |
-| E-09 | Same car re-read at the speaker while recording | Firmware debounces for 2 s; ears also ignores a second `SPEAKER` for the car already recording. | Keep both. |
-| E-10 | A second, different car passes the speaker while the first is recording | Firmware replaces the order (`ordering` = new car). Ears stops the first ffmpeg **without transcribing it**; the first car's speech is discarded silently. | Decide and test. Minimum: log that car A's order was abandoned. |
-| E-11 | Car B parks while car A is ordering | Firmware closes the order (any park closes it) and flashes `ORDER IS IN`. Ears only stops recording when the **ordering** car parks, so the mic stays open for car A until A parks or the 60 s cap. Screen and laptop disagree. | Fix: the laptop should close the order on any `parked` event, matching the firmware, and assign the recording to car A. Pin with a test. |
-| E-12 | Ordering car carried straight to the pickup lane | Firmware clears the order and the label. Ears drops `tasks`/`labels` for the car but **keeps recording**; at the 60 s cap it transcribes and sends `CAR n <label>` to a car that was just collected. | Fix: a `collected` event for the recording car stops and discards the recording. |
-| E-13 | Car collected while its label is being computed (the ~8 s LLM window) | The LLM upgrade still sends `CAR n <label>`, re-labelling a car that is now blank. | Fix: the worker checks the car is still awaiting a label (generation counter or order id) before each send. |
-| E-14 | Car lifted off the speaker and never parked or collected | Same as E-08. | Keep. |
+| E-01 | Silent or near-empty recording | `Transcriber.transcribe()` returns `""` when the WAV is missing or under 8000 bytes; `Ears` logs "nothing transcribed" and sends nothing, so the car keeps showing `CAR n`. | Tested |
+| E-02 | Transcript is only filler (`"Hello?"`, `"Um. Okay."`, `[BLANK_AUDIO]`) | `TranscriptCleaner` leaves nothing but punctuation, and `Ears` sends nothing, because an empty label would blank the row. | Tested |
+| E-03 | Car parked within 0.6 s of ordering | `Recorder.stop()` first waits until `MIN_HOLD_S` (0.6 s) has passed, because stopping ffmpeg during device start-up can leave no file at all. The clock and sleep are injected, so tests do not wait. | Tested |
+| E-04 | ffmpeg will not stop gracefully | `q` on stdin, then SIGINT, then SIGKILL, which logs that the WAV may be truncated. | Tested |
+| E-05 | ffmpeg missing or fails to start | Each order gets its own WAV (`tasklot_order_car<n>_<order>.wav`). A leftover file with that name is deleted before recording, and a failed start records nothing, so a previous order's audio can never become this car's task. WAVs are deleted once transcribed, and on shutdown. | Fixed |
+| E-06 | `whisper-cli` or the model missing | Checked once at startup and logged clearly. A run that raises or exits non-zero logs why (exit code and stderr) and yields `""`. | Fixed |
+| E-07 | Whisper hangs | `WHISPER_TIMEOUT_S` (90 s), then `""`. | Tested |
+| E-08 | Car never parked after ordering | The capper closes the order after `MAX_RECORDING_S` (60 s) and transcribes it for that car. | Tested |
+| E-09 | Same car re-read at the speaker while recording | The firmware's `LaneDebouncer` ignores repeats for 2 s, and `Ears` ignores a second `SPEAKER` for the car already recording instead of restarting. | Tested |
+| E-10 | A second, different car passes the speaker while the first is recording | The firmware replaces the order. `Ears` discards car A's recording and logs that it was abandoned. | Tested; open (9.4) |
+| E-11 | Car B parks while car A is ordering | Any `parked` event closes the open order, as the firmware does, and the recording belongs to car A. | Fixed |
+| E-12 | Ordering car carried straight to the pickup lane | The `collected` event stops and discards the recording; nothing is transcribed for a car that is now blank. | Fixed |
+| E-13 | Car collected while its label is being computed (the ~8 s LLM window) | Every result carries the order id it was started under, and `Lot` bumps the id on each new order and each pickup, so a stale label or LLM upgrade is dropped and logged. | Fixed |
+| E-14 | Car lifted off the speaker and never parked or collected | Same as E-08. | Tested |
 
 ### Text, width, and character set
 
-| # | Case | Today | Target |
+| # | Case | Now | Status |
 |---|---|---|---|
-| E-15 | Transcript longer than the LCD width | `condense()` shrinks to <= 18 characters through the stages in 4.3; firmware also truncates `CAR` text to 18. | Keep. Property test: for every fixture and random inputs, `len(lcd) <= 18`. |
-| E-16 | Very long full text for read-back | Ears chunks at <= 40 characters on word boundaries; firmware keeps 120 characters and 9 wrapped rows (3 pages). Text past that is silently dropped. | Keep, and test that the chunker never emits a `FULL` line over 47 characters. A single word over 40 characters currently produces one oversized chunk; split it. |
-| E-17 | Non-ASCII in the transcript (smart quotes, accents, emoji, other scripts) | `ascii_only()` maps smart quotes and dashes to ASCII and drops every other non-ASCII character (`cafe` keeps, `café` becomes `caf`). A fully non-ASCII transcript becomes empty and is skipped. `send()` also drops non-ASCII. The firmware stores whatever bytes arrive, so a non-ASCII byte from another sender shows as a garbage glyph. | Keep the filter; decide whether to transliterate accents (`é` -> `e`) rather than drop them. Test both condensers on the same non-ASCII cases. |
-| E-18 | Empty or whitespace-only input to `condense()` | Returns all-empty fields. | Keep (already in `cases.json`). |
-| E-19 | Label exactly 18 characters, or 19 | 18 passes untouched; 19 goes through devowel (`Print reader coupn`). | Keep (in `cases.json`). |
-| E-20 | `CAR <n>` with no text, or `DONE <n>` | Both blank the label; `DONE` also closes any order/read-back and may flash `ALL DONE!!`. | Keep. |
-| E-21 | LLM returns a hallucinated label (adds a deadline, a day, a number, or an unrelated phrase) | Rejected by `invented()` / `unrelated()`; the rule-based label stays. | Keep. Unit-test both guards with the real failures recorded in the code comments (`PAPER DUE TONIGHT`, `FRI`, `PLACE ORDER`). |
-| E-22 | LLM times out, is missing, or returns empty or multi-line output | Timeout/exception -> `None`; output is collapsed to one line and trimmed to 18. | Keep, with the LLM runner injectable so tests never call a real model. |
-| E-23 | Too little was said for the LLM | Under 3 content words: LLM skipped. | Keep. |
+| E-15 | Transcript longer than the LCD width | `Condenser.condense()` shrinks it to at most 18 characters through the stages in 4.3; the firmware also truncates `CAR` text to 18. A property test checks the width on every fixture and on seeded random memos, in both languages. | Tested |
+| E-16 | Very long full text for read-back | The read-back is sent in chunks of at most 40 characters on word boundaries; a single word over 40 is split, and no empty `FULL ` line is sent. The firmware keeps 120 characters (9 wrapped rows, 3 pages); text past that is dropped. | Fixed |
+| E-17 | Non-ASCII in the transcript (smart quotes, accents, emoji, other scripts) | `ascii_only()` maps smart quotes and dashes to ASCII and drops every other non-ASCII character (`cafe` stays, `café` becomes `caf`: accents are dropped, not transliterated). A fully non-ASCII transcript becomes empty and is skipped, and `SerialLink` drops non-ASCII on the way out. Both condensers are tested on the same cases. | Tested |
+| E-18 | Empty or whitespace-only input to `condense()` | All fields empty. | Tested (`cases.json`) |
+| E-19 | Label exactly 18 characters, or 19 | 18 passes untouched; 19 goes through devowel (`Print reader coupn`). | Tested (`cases.json`) |
+| E-20 | `CAR <n>` with no text, or `DONE <n>` | Both blank the label; `DONE` also closes any order or read-back, and flashes `ALL DONE!!` only if the car had a label. The laptop reads the empty echo `TASK <n> ` and forgets the car's text. | Tested |
+| E-21 | LLM returns a hallucinated label (adds a deadline, a day, a number, or an unrelated phrase) | Rejected by `invented()` / `unrelated()`; the rule-based label stays. The tests use the real failures recorded in the code (`PAPER DUE TONIGHT`, `ESSAY FRI`, `PLACE ORDER`). | Tested |
+| E-22 | LLM times out, is missing, exits non-zero, or returns empty or multi-line output | Any exception, timeout or non-zero exit falls back to the rule-based label; output is collapsed to one line and trimmed to 18. The runner is injected, so no test calls a model. | Tested |
+| E-23 | Too little was said for the LLM | Under 3 content words, the LLM is not asked. | Tested |
 
 ### Lot, cars, and readers
 
-| # | Case | Today | Target |
+| # | Case | Now | Status |
 |---|---|---|---|
-| E-24 | All four spaces full | There is no fifth space; a fifth car simply has nowhere to park. All four lines show tasks. The 3.3 V rail is most stressed in this state (flaky reads). | Keep. Manual: check reads stay reliable with every space and both lanes populated. |
-| E-25 | More than 8 distinct cars | The ninth UID prints `no car slots left` and is ignored until reset. | Keep; the limit as a named constant shared by firmware and laptop (`MAX_CARS = 8`). |
-| E-26 | Car moved directly from space 1 to space 2 | Arrival on 2 releases space 1 immediately (`SPACE 1 -> CAR n left`, then `SPACE 2 <- CAR n parked`); the list reorders, the task is not duplicated. | Keep. Host-side test of `ParkingLot`. |
-| E-27 | Two cars swapped between spaces | Slow swap (both cars off their spaces for more than 1.2 s): each lift reports `left`, each set-down reports `parked`, and the final state is the swapped order. Fast swap (both set down within 1.2 s): the presence ping does not check which tag answers, so neither space ever reads empty or sees an arrival, and the board keeps the old assignment, with each label on the other car's line. (This row first said the arrival rule in E-26 catches the fast swap; it does not. See quirk 5 in [`firmware/README.md`](firmware/README.md).) | Keep the slow swap; the fast swap stays a known gap, because fixing it changes the bench-verified reader call sequence. Host-side tests with a fake clock cover both timings. |
-| E-28 | A car is lifted and replaced on the same space quickly (under 1.2 s) | No event; presence ping missed fewer than `GONE_MS`. | Keep. |
-| E-29 | Partial RFID read (UID with a trailing run of zero bytes, or three or more zero bytes) | Rejected by `plausibleUID()`; not registered as a new car. (A "seen twice" rule was tried and reverted because a resting tag is never re-polled.) | Keep. Host-side test with the two bench UIDs `04 D1 60 00 00 00 00` and `04 E1 63 00 00 00 00`. |
-| E-30 | Simulator drives a v2 board | The simulator sends `PARK`, `LEAVE`, `EMPTY` after connecting; v2 replies `* unknown command:` to each. Labels (`CAR`) and `ORDER`/`PLAY`/`DONE` work. | Decide: either v2 accepts `PARK`/`LEAVE`/`EMPTY` (useful when a reader is dead), or the simulator stops sending them to v2. Document whichever. |
-| E-31 | Commands sent faster than the board can print | Commands merge in the 64-byte RX buffer. Ears paces 0.35 s; the CLI `--push` paces only 0.08 s and can overrun. | Fix the CLI to use the same paced `SerialLink`. Test that `SerialLink` never writes two lines inside the pacing window. |
-| E-32 | Unknown, partial, or garbled line from the board (`3>Charge baCAR 4 Glu`, empty line) | Ears ignores lines it cannot parse; the read loop never dies. | Keep (covered by `test_ears_mock.py` scenario 5). Parser unit tests for every event in 3.1 and for garbage. |
-| E-33 | A board line contains a substring that looks like an event | Ears uses unanchored `re.search`. A label is at most 18 characters, and `CAR 9 reading back` is exactly 18, so the echo `TASK 3 CAR 9 reading back` (or the lot line `1>CAR 9 reading back`) would trigger a read-back for car 9. | Fix: anchor event patterns to the start of the line. |
-| E-34 | Bad car number in a command (`CAR 0`, `CAR 9`, `ORDER abc`) | `* bad car number: <n>`; no state change. | Keep. |
+| E-24 | All four spaces full | There is no fifth space; all four lines show tasks. The 3.3 V rail is most stressed in this state. | Tested; rail: manual (7.8) |
+| E-25 | More than 8 distinct cars | The ninth UID prints `no car slots left` and is ignored until reset. `MAX_CARS = 8` in both `config.h` and `config.py`. | Tested |
+| E-26 | Car moved directly from space 1 to space 2 | Arrival on 2 releases space 1 at once (`SPACE 1 -> CAR n left`, then `SPACE 2 <- CAR n parked`); the list reorders and the task is not duplicated. | Tested |
+| E-27 | Two cars swapped between spaces | Slow swap (both cars off their spaces for more than 1.2 s): each lift reports `left`, each set-down reports `parked`, and the lot ends up swapped. Fast swap (both set down within 1.2 s): the presence ping does not check which tag answers, so the board keeps the old assignment, with each label on the other car's line (quirk 5 in [`firmware/README.md`](firmware/README.md)). Fixing it would change the bench-verified reader call sequence. | Slow: tested. Fast: known gap |
+| E-28 | A car is lifted and replaced on the same space quickly (under 1.2 s) | No event: one missed presence ping is not a departure; `GONE_MS` (1.2 s) of silence is. | Tested; manual (7.10) |
+| E-29 | Partial RFID read (UID with a trailing run of zero bytes, or three or more zero bytes) | `Uid::isPlausible()` rejects it, so it is never registered as a new car. Tested with the two bench UIDs `04 D1 60 00 00 00 00` and `04 E1 63 00 00 00 00`. (A "seen twice" rule was tried and reverted, because a resting tag is never re-polled.) | Tested |
+| E-30 | Simulator drives a v2 board | The simulator sends `PARK`, `LEAVE`, `EMPTY` after connecting; v2 replies `* unknown command:` to each. Labels (`CAR`) and `ORDER`/`PLAY`/`DONE` work. | Open (9.3) |
+| E-31 | Commands sent faster than the board can print | Every laptop sender, including `tasklot_voice.py --push`, goes through `SerialLink`, which never writes two lines less than 0.35 s apart. | Fixed |
+| E-32 | Unknown, partial, or garbled line from the board (`3>Charge baCAR 4 Glu`, empty line) | Parsed as unknown and ignored; one bad line never stops the read loop. | Tested |
+| E-33 | A board line contains a substring that looks like an event | Event patterns are anchored at the start of the line, so the echo `TASK 3 CAR 9 reading back` or the lot line `1>CAR 9 reading back` triggers nothing. | Fixed |
+| E-34 | Bad car number in a command (`CAR 0`, `CAR 9`, `ORDER abc`) | `* bad car number: <n>`; no state change. | Tested |
 
 ### Serial link and process lifecycle
 
-| # | Case | Today | Target |
+| # | Case | Now | Status |
 |---|---|---|---|
-| E-35 | Serial port missing at startup | `serial.Serial()` raises and the daemon exits with a traceback. | Fix: clear error naming `TASKLOT_PORT`, non-zero exit. |
-| E-36 | USB unplugged while running | `readline()` raises; ears logs, sleeps 1 s, and retries `readline()` on the dead handle forever. Writes fail and are logged. | Fix: `SerialLink` detects the disconnect, closes, and reopens with backoff; logs the state change once. |
-| E-37 | Board resets (port reopened, USB brownout) | The board forgets every car and label (unless `REMEMBER 1`). The simulator re-sends every label after connecting; ears does not, so its `tasks`/`labels` no longer match the board. | Fix: after (re)connecting, ears waits for the boot banner and re-sends known labels. Note car numbers are assigned in the order tags are first seen, so after a reset the same physical car can get a different number; persistence (`REMEMBER 1`) is the real fix for that. |
-| E-38 | Daemon restarted while the board keeps running | Ears has no full text; it learns labels from `TASK` echoes as they arrive. A read-back for a car it has no text for logs "nothing to show". | Keep; consider asking the board for state (`LOT`) on connect. |
-| E-39 | Another program holds the port (Serial Monitor, the simulator) | Open fails. | Same as E-35, with a hint that only one program can hold the port. |
-| E-40 | No LCD connected | Firmware logs once and runs; the lot still prints to serial. | Keep. |
-| E-41 | A reader not talking at boot (`0x00`/`0xFF`) | Reported in the boot banner; the sketch still runs. | Keep. Manual check. |
-| E-42 | `millis()` wraps (about 49.7 days) | Timers use unsigned subtraction or a signed difference, so they survive the wrap. | Keep; host-side test the timer helpers across the wrap. |
-| E-43 | `/tmp/tasklot_*` files written by another user or left over | Watchers blank the files at startup; anything written is spoken or sent to the board. | Keep the behaviour, but put the paths in one config place. |
+| E-35 | Serial port missing at startup | A message naming the port and `TASKLOT_PORT`, and exit status 2; no traceback. | Fixed |
+| E-36 | USB unplugged while running | `SerialLink` notices the dead handle, closes it, logs once, and reopens with backoff (1, 2, 4, then every 8 s). | Fixed; manual (7.9) |
+| E-37 | Board resets (port reopened, USB brownout) | After a reopen, `Ears` re-sends every label it knows and drops an order that was being recorded, since the board has forgotten it. Car numbers are assigned in the order tags are first seen, so after a reset a physical car can get a different number; `REMEMBER 1` (EEPROM) is the real fix. | Fixed; manual (7.9) |
+| E-38 | Daemon restarted while the board keeps running | The laptop has no full text; it learns labels from `TASK` echoes, and a read-back falls back to the label. A read-back for a car it knows nothing about logs "nothing to show". | Tested |
+| E-39 | Another program holds the port (Serial Monitor, the simulator) | Same as E-35, with a hint that only one program can hold the port. | Fixed |
+| E-40 | No LCD connected | The firmware logs once and runs; the lot still prints to serial. | Tested |
+| E-41 | A reader not talking at boot (`0x00`/`0xFF`) | Reported in the boot banner; the sketch still runs. | Tested; manual (7.1) |
+| E-42 | `millis()` wraps (about 49.7 days) | `elapsedMs()` and `deadlineReached()` in `timing.h` use unsigned and signed differences, so timers survive the wrap. | Tested |
+| E-43 | Side-channel files (say, command) written by someone else, or left over | The files live in the per-user temp directory by default (`$TMPDIR` on macOS, private to the account), and every path is in `config.py`. The watchers blank them at startup without following a symlink; anything written afterwards is spoken or sent to the board. | Fixed |
 
 ---
 
-## 6. Target architecture
+## 6. Architecture
 
-The goal is to move from module-level globals and long procedural functions to small
-objects around the real state, with every external tool behind an interface that tests
-can replace. Behaviour should not change except where section 5 says "Fix".
+Small objects around the real state, with every external tool (the serial port, ffmpeg,
+whisper.cpp, the LLM, `say`, the clock) behind a seam a test can replace. The wire format
+is unchanged from the original code byte for byte: the ears end-to-end test asserts every
+byte the daemon writes for a scripted session, and the firmware host tests diff every
+serial byte and LCD frame against transcripts recorded from the original sketch.
 
-### 6.1 Python: `tools/voice/tasklot/`
+### 6.1 Voice pipeline: `tools/voice/tasklot/`
 
 ```
 tools/voice/
   tasklot/
-    __init__.py
-    config.py        Settings dataclass built from environment variables (port, baud, model,
-                     LLM on/off and timeout, MAX_REC, MIN_HOLD, pacing, /tmp paths)
-    task.py          Task (dataclass)
-    lot.py           Lot
-    protocol.py      BoardEvent types + parse_line(); command formatters
-    serial_link.py   SerialLink
-    recorder.py      Recorder
-    transcriber.py   Transcriber (whisper.cpp), FakeTranscriber
-    cleaner.py       TranscriptCleaner (clean_transcript, strip_lead, FILLER)
-    condenser.py     Condenser (port of condense.js; same cases.json)
-    labeler.py       Labeler (LLM label + guards)
-    ears.py          Ears orchestrator
-    cli.py           thin CLI: `python3 -m tasklot ears`, `python3 -m tasklot add --text ...`
-  tests/
-    test_condenser.py, test_cleaner.py, test_labeler.py, test_protocol.py,
-    test_lot.py, test_serial_link.py, test_recorder.py, test_ears.py, test_ears_mock.py
-  condense.js        stays canonical for the browser; mirrors Condenser
-  cases.json         shared fixtures
+    config.py         Settings from environment variables; every default in one place
+    logs.py           the one logging helper
+    task.py           Task (dataclass)
+    lot.py            Lot: tasks, labels, spaces, the open order, per-car order ids
+    protocol.py       board events + parse_line() (anchored patterns); command formatters
+    serial_link.py    SerialLink: paced writes, reconnect with backoff
+    recorder.py       Recorder (ffmpeg), NullRecorder
+    transcriber.py    Transcriber (whisper.cpp), ScriptTranscriber (offline CLI), FakeTranscriber
+    cleaner.py        TranscriptCleaner
+    condenser.py      Condenser (mirrors condense.js; same cases.json)
+    labeler.py        Labeler: optional LLM label behind guards
+    side_channels.py  FileInbox (the say and command files), SayVoice (macOS `say`)
+    ears.py           Ears: the live daemon
+    offline.py        OfflineTool: the `voice` command (audio or text -> tasks.json -> board)
+    cli.py            argument parsing and wiring only: `python3 -m tasklot ears|voice`
+  tasklot_ears.py, tasklot_voice.py   the original commands, now thin entry points into cli.py
+  condense.js         the reference condenser, for node and the browser
+  condense.py         command-line front door to Condenser
+  cases.json          shared fixtures for both condensers
+  sync_page.py        re-inlines condense.js into the simulator
+  tests/              one test file per module, fakes.py, and the end-to-end test
 ```
 
-| Class | Owns | Key methods | Collaborators / test seam |
+| Class | Owns | Key methods | Test seam |
 |---|---|---|---|
-| `Task` (dataclass) | `car: int`, `full: str`, `lcd: str`, `due: str`, `raw: str`, `source: str`, `recorded: datetime \| None` | `to_dict()`, `from_dict()` | none |
-| `Lot` | Per-car tasks and the label the board is showing; which car (if any) is recording; an order id per car so stale results can be dropped (E-12, E-13) | `begin_order(car)`, `close_order()`, `set_label(car, text)`, `collect(car)`, `full_text(car)`, `is_current(car, order_id)` | pure, no I/O |
-| `BoardEvent` + `parse_line()` | One frozen dataclass per event in 3.1 (`Ordering`, `Parked`, `Left`, `Playback`, `Collected`, `TaskEcho`, `NewCar`, `Pong`, `Unknown`) | `parse_line(str) -> BoardEvent`, anchored patterns (E-33) | pure |
+| `Task` (dataclass) | `car`, `full`, `lcd`, `due`, `raw`, `source`, `recorded` | `to_dict()`, `from_dict()`, `from_condensed()` | none needed |
+| `Lot` | Per-car tasks and the label the board shows; which car is on each space; which car is recording; an order id per car so stale results can be dropped (E-12, E-13) | `begin_order(car)`, `close_order()`, `set_label()`, `park()`, `leave()`, `collect(car)`, `rows()`, `is_current(car, order_id)` | pure, no I/O except `tasks.json` load/save |
+| Board events + `parse_line()` | One frozen dataclass per event in 3.1 (`Ordering`, `Parked`, `Left`, `Playback`, `Collected`, `TaskEcho`, `NewCar`, `Pong`, `Unknown`) | `parse_line(str)`, `car_command()`, `full_text_commands()` | pure |
 | `SerialLink` | The port, the write lock, the pacing, reconnect with backoff | `open()`, `readline()`, `send(cmd)`, `close()` | takes a `serial_factory`, so tests pass a fake port or a pty |
-| `Recorder` | The ffmpeg process, start time, per-order WAV path | `start(car) -> Path`, `stop() -> Path \| None`, `elapsed()` | takes a `process_factory` and a clock |
-| `Transcriber` | whisper-cli path, model path, timeout | `transcribe(path) -> str` | `FakeTranscriber(text)` replaces `TASKLOT_FAKE_TRANSCRIPT` |
-| `TranscriptCleaner` | Filler and greeting rules | `clean(text) -> str` | pure |
-| `Condenser` | Width and the rule tables | `condense(text) -> Task fields`, `lot_lines(lot)`, `first_step(text)`, `playback(task)` | pure; must pass `cases.json` exactly like `condense.js` |
-| `Labeler` | Prompt, guards (`unrelated`, `invented`, `fit`), timeout | `label(text) -> str \| None` | takes a `runner(prompt) -> str` so tests never call a model |
-| `Ears` | Wires everything: reads events, drives `Recorder`, queues work, sends commands | `handle(event)`, `run()`, `work_once()` | all collaborators injected; `handle()` is synchronous and testable without threads |
-| CLI | argument parsing only | `main(argv)` | none |
+| `Recorder` | The ffmpeg process, its start time, the per-order WAV path | `start(car, order_id)`, `stop()`, `discard()`, `elapsed()` | takes a `process_factory`, a clock and a sleep |
+| `Transcriber` | whisper-cli path, model path, timeout | `problems()`, `transcribe(path)` | takes a `runner`; `FakeTranscriber(text)` backs `TASKLOT_FAKE_TRANSCRIPT` |
+| `TranscriptCleaner` | Filler and greeting rules | `clean(text)`, `is_empty(text)` | pure |
+| `Condenser` | Width and the rule tables | `condense(text)`, `lot_lines(rows)`, `first_step(text)`, `playback(task)` | pure; must pass `cases.json` exactly like `condense.js` |
+| `Labeler` | Prompt, guards (`unrelated`, `invented`, `fit`), timeout | `label(text) -> str \| None` | takes a `runner(prompt, timeout)`, so tests never call a model |
+| `FileInbox`, `SayVoice` | One watched file; the `say` voice and rate | `reset()`, `poll()`; `pick_voice()`, `speak(text)` | real temp files; `SayVoice` takes `run` and `popen` |
+| `Ears` | Wires everything: reads events, drives the `Recorder`, queues work, sends commands | `handle_line()`, `work_once()`, `check_cap()`, `on_reconnect()`, `shutdown()` | every collaborator injected; `handle()` and `work_once()` are synchronous, so tests need no threads |
+| `OfflineTool` | `tasks.json` and the offline flow | `add()`, `add_audio()`, `preview()`, `push()`, `watch()` | injected transcriber, `link_factory` and `sleep` |
+| CLI | argument parsing only | `main(argv)` | none needed |
 
-`tasklot_voice.py`'s offline path (audio file or text -> `tasks.json` -> push) becomes a
-CLI subcommand that reuses `Condenser`, `Transcriber`, `Task`, and `SerialLink`, so it
-gets the same pacing (E-31).
+Behaviour changed only where section 5 says Fixed, plus these, each with a test:
+
+- The empty echo `TASK <n> ` after `DONE` is parsed: it clears the label and the
+  laptop's full text.
+- Two places where `condense.py` had drifted from `condense.js` (a sentence break at
+  index 0, and a due phrase that also appears inside an earlier word) now match
+  `condense.js`. The cross-language test found them.
+- Quitting with Ctrl-C or SIGTERM deletes the open recording and any WAV still queued.
+- `Ears` logs the laptop's view of the lot (`[lot] 1>... | 2>...`) after every park
+  and leave, so it can be checked against the board's printout.
+- The LLM runs through `claude -p` with no tools and without saving the session.
 
 ### 6.2 Firmware: `firmware/tasklot_full_v2/`
 
 Arduino builds every `.h`/`.cpp` in the sketch folder, so the split needs no build
-tooling. Hardware-free classes should compile on the laptop too, so their logic can be
-unit-tested with the system C++ compiler and a fake reader.
+tooling. The hardware-free classes also compile on a laptop, so their logic is
+unit-tested there with the system C++ compiler against fakes of the Arduino libraries.
 
 ```
 firmware/tasklot_full_v2/
-  tasklot_full_v2.ino   setup() + loop(): construct objects, wire them, tick them
-  config.h              pins, MAX_CARS, TASK_LEN, GONE_MS, LANE_COOLDOWN_MS, timings, feature flags
-  RfidSlot.h/.cpp       one RC522: arrival read, presence ping, UID plausibility, version report
-  CarRegistry.h/.cpp    UID -> car index, labels, optional EEPROM persistence
-  ParkingLot.h/.cpp     four spaces + two lanes: occupancy, order/read-back state, lane debounce
+  tasklot_full_v2.ino   builds the objects; setup() and loop() are a few lines each
+  config.h              pins, MAX_CARS, TASK_LEN, GONE_MS, LANE_COOLDOWN_MS, timings, switches
+  timing.h              millis() arithmetic that survives the 32-bit wrap
+  TaskLot.h/.cpp        the coordinator: what each read and each command does; owns OrderState
+  RfidSlot.h/.cpp       one RC522: arrival read, presence ping, version check
+  Uid.h/.cpp            a tag UID and the plausibility filter
+  CarRegistry.h/.cpp    UID -> car -> label, optional EEPROM persistence
+  ParkingLot.h/.cpp     which car is on each space, the presence timeout, lot lines
+  LaneDebouncer.h/.cpp  one event per sweep on a lane
+  ReadbackText.h/.cpp   the FULL text buffer and its word wrap
   LcdView.h/.cpp        overlays, flashing, paging, row diffing; the only code that draws
-  SerialProtocol.h/.cpp line buffer, command parsing, event printing (exact strings in 3.1)
-firmware/tests/          host-side tests (fake RfidSlot, fake clock), built with c++
+  SerialProtocol.h/.cpp line buffer, command parsing, every event string in 3.1
+firmware/tests/         host tests: fake Arduino libraries, unit tests, golden transcripts
 ```
 
-| Class | Owns | Notes |
-|---|---|---|
-| `RfidSlot` | An `MFRC522`, its SS pin, role (space or lane) | `pollArrival(Uid&)`, `stillPresent()`, `versionByte()`. Keeps the bench-verified call sequence exactly: `IsNewCardPresent` -> `ReadCardSerial` -> `HaltA` -> `StopCrypto1`, and `WakeupA` -> `HaltA` for presence. |
-| `CarRegistry` | `known`, `knownLen`, `carCount`, `taskOf`, EEPROM layout | `find(uid)`, `add(uid)`, `label(car)`, `setLabel(car, text)`, `clearAll()`, `save()`/`load()`/`forget()`. `isPlausible(uid)` can live here or in `RfidSlot`. |
-| `ParkingLot` | `occupant`, `lastSeen`, `ordering`, `playing`, lane debounce | Methods return what happened (`Arrived`, `Left`, `Ordering`, `Playback`, `Collected`) instead of printing, so the `.ino` passes results to `SerialProtocol` and `LcdView`. This is what makes E-26 to E-29 host-testable. |
-| `LcdView` | `LiquidCrystal_I2C`, `shown`, `lotBuf`, overlay state, wrap buffer | `showLot(lines)`, `showOrdering(car)`, `announce(msg)`, `showFullText(text)`, `tick(now)`. Must stay non-blocking. |
-| `SerialProtocol` | Command buffer | `poll()` returns parsed commands; `print*()` emits the event strings in section 3.1 byte for byte. Any change to those strings breaks the laptop and the simulator. |
+`LaneDebouncer`, `ReadbackText` and the `OrderState` struct (who is ordering or being
+read back) are split out of what would otherwise be `ParkingLot` and `LcdView`, and `LcdView` reads `OrderState` instead of keeping its own
+copy, so the screen and the interaction cannot disagree. The class-by-class table, the
+memory use before and after, the one deliberate behaviour change, and the original's
+quirks (kept or fixed) are in [`firmware/README.md`](firmware/README.md).
 
-Constraints for the firmware refactor: keep the wire format identical (or change both
-sides in the same commit with tests), keep `delay(60)` and the poll order, keep the boot
-deselect of all six SS pins before `SPI.begin()`, keep SRAM use low (strings in `F()`),
-and keep `REMEMBER` and `USE_PRESENCE` as compile-time switches.
+Constraints the split kept: the wire format is identical, `delay(60)` and the poll
+order are unchanged, all six SS pins are still deselected before `SPI.begin()`, SRAM
+use stays low (printed strings in `F()`), and `REMEMBER` and `USE_PRESENCE` are still
+compile-time switches.
 
 ### 6.3 `condense.js`
 
-`condense.js` mirrors `Condenser`: same stages, same tables, same outputs on
-`cases.json`. It keeps the UMD wrapper so it loads in node (`require`) and the browser
-(`window.TaskLotCondense`). After any change, run `python3 tools/voice/sync_page.py` to
-re-inline it into the simulator.
-
-### 6.4 Voice pipeline: as built
-
-The Python side follows 6.1, plus four small modules: `logs.py` (the one logging
-helper), `side_channels.py` (`FileInbox` for the say/command files, `SayVoice` for macOS
-`say`), `offline.py` (`OfflineTool`, the logic behind the `voice` command), and
-`tests/fakes.py` (fake clock, port, and ffmpeg process). `condense.js` exposes a
-`Condenser` class alongside the function API the simulator calls.
-
-Wire strings are unchanged: the end-to-end test asserts every byte the daemon writes
-for a scripted session, captured from the code at import. Behaviour changed only where
-section 5 says "Fix", plus three small corrections found while porting:
-
-| Item | Now |
-|---|---|
-| E-05 | One WAV per order (`tasklot_order_car<n>_<order>.wav`); a leftover file is deleted before recording and a failed start records nothing. WAVs are deleted after transcription. |
-| E-06 | Missing `whisper-cli` or model is logged once at startup. |
-| E-10 | Car A's recording is discarded, as before, and the abandonment is logged. |
-| E-11 | Any `parked` event closes the open order; the recording belongs to the ordering car. |
-| E-12, E-13 | Pickup during an order discards the recording; per-car order ids drop stale labels and LLM upgrades. |
-| E-16 | Words over 40 characters are split; no empty `FULL ` line is sent. |
-| E-31 | `--push` uses the paced `SerialLink`. |
-| E-33 | Event patterns are anchored at the start of the line. |
-| E-35, E-39 | An unopenable port prints what to check and exits with status 2. |
-| E-36, E-37 | `SerialLink` reopens with backoff; `Ears` re-sends known labels after a reconnect. |
-| E-17 | Unchanged: accents are dropped, not transliterated (still open). |
-| `TASK <n> ` | The empty echo after `DONE` is now parsed; it clears the label and the laptop's full text. |
-| Python port | Two places where `condense.py` had drifted from `condense.js` (a sentence break at index 0; a due phrase that also appears inside an earlier word) now match `condense.js`. Found by the cross-language test. |
-
-### 6.5 Firmware: as built
-
-The firmware follows 6.2, with smaller pieces split out of the planned `ParkingLot`
-and `LcdView`: `LaneDebouncer` (lane debounce), `ReadbackText` (the full-text buffer
-and word wrap), and the `OrderState` struct (who is ordering or being read back), which
-`TaskLot` owns and `LcdView` reads. A `Uid` value type carries reads, and `TaskLot`
-coordinates everything. The wire format
-is unchanged byte for byte; the host tests in `firmware/tests/` pin it against
-transcripts recorded from the original sketch. The full write-up, including the one
-deliberate behaviour change and a corrected reading of E-27 (a fast swap is not caught
-by the arrival rule), is in [`firmware/README.md`](firmware/README.md).
+`condense.js` is the reference version of the condenser rules, and `Condenser` mirrors
+it: same stages, same tables, same outputs on `cases.json`. It keeps the UMD wrapper so
+it loads in node (`require`) and the browser (`window.TaskLotCondense`). After any change,
+run `python3 tools/voice/sync_page.py` to re-inline it into the simulator; a test fails
+if the inlined copy is stale.
 
 ---
 
@@ -490,7 +472,7 @@ These cannot be automated. Run them with `firmware/tasklot_full_v2` flashed and
 6. Labelled car past the speaker: `YOUR ORDER` with the full text, paging if long, back to the lot within 12 s.
 7. Car through the pickup lane: `ALL DONE!!`, the space empties, the label is gone.
 8. Fill all four spaces and pass a car over each lane: reads stay reliable (3.3 V rail check).
-9. Unplug and replug USB with ears running: note what ears does (E-36, E-37).
+9. Unplug and replug USB with ears running: ears logs `lost the board`, reconnects once the board is back, and re-sends every label (E-36, E-37).
 10. Lift a car for under a second and put it back: no `left` event (E-28).
 
 ---
@@ -498,16 +480,13 @@ These cannot be automated. Run them with `firmware/tasklot_full_v2` flashed and
 ## 8. Running the automated checks
 
 ```bash
-make test        # voice pipeline (python3 -m unittest + node --test; the ears end-to-end test
-                 # needs pyserial) and the firmware host tests (firmware/tests/run_tests.sh)
+make test        # firmware host tests, Python unittest, node --test
+make test PYTHON=.venv/bin/python   # the same, with pyserial, so the ears end-to-end test runs
 make firmware    # compile every sketch for the Mega 2560 (needs arduino-cli + MFRC522 + LiquidCrystal I2C)
 ```
 
-Baseline at import (before any refactor): `node test_condense.js` 11/11 cases,
-`python3 test_condense.py` 11/11 cases plus the simulator copy check, and
-`test_ears_mock.py` 6/6 checks with pyserial 3.5 and `TASKLOT_LLM=0`. All eight sketches
-compile for the Mega 2560 (v2 uses 5 % of flash). `build/cad/audit.py` reports no blockers
-and 3 warnings (two parts need a large-bed printer; the car dimensions are unmeasured).
+No test calls an LLM or needs a microphone, a whisper model, or a board. The README's
+Tests section lists what each suite covers.
 
 ---
 
@@ -523,3 +502,47 @@ and 3 warnings (two parts need a large-bed printer; the car dimensions are unmea
    `PLAY` does not.
 3. **E-30:** should v2 accept `PARK`/`LEAVE`/`EMPTY` from the simulator?
 4. **E-10:** what should happen to car A's speech when car B takes over the speaker?
+
+---
+
+## Appendix A. History: before the refactor
+
+"The original code" in this document is what was imported: the single-file sketch
+`firmware/tasklot_full_v2/tasklot_full_v2.ino` and the scripts `tools/voice/tasklot_ears.py`,
+`tools/voice/condense.{js,py}` and `tools/voice/tasklot_voice.py`, with
+`tools/sim/tasklot-sim.html`. The refactor replaced the sketch's globals with the classes
+in 6.2 and the scripts with the `tasklot` package in 6.1 (the two scripts are now thin
+entry points with the same flags). The originals are in the git history.
+
+### A.1 Edge cases that changed
+
+How each case that section 5 marks Fixed (and E-10, where only a log line was added)
+behaved in the original code. Paths and names are the original ones.
+
+| # | Case | Before the refactor |
+|---|---|---|
+| E-05 | ffmpeg missing or fails to start | Logged; `rec` stays `None`. On park, the old `/tmp/tasklot_order_car<n>.wav` from a **previous** order (if any) is transcribed and becomes this car's task. |
+| E-06 | `whisper-cli` or the model missing | `subprocess` raises, caught, returns `""`, logs `[whisper] failed`. |
+| E-10 | A second, different car passes the speaker while the first is recording | Firmware replaces the order (`ordering` = new car). Ears stops the first ffmpeg **without transcribing it**; the first car's speech is discarded silently. |
+| E-11 | Car B parks while car A is ordering | Firmware closes the order (any park closes it) and flashes `ORDER IS IN`. Ears only stops recording when the **ordering** car parks, so the mic stays open for car A until A parks or the 60 s cap. Screen and laptop disagree. |
+| E-12 | Ordering car carried straight to the pickup lane | Firmware clears the order and the label. Ears drops `tasks`/`labels` for the car but **keeps recording**; at the 60 s cap it transcribes and sends `CAR n <label>` to a car that was just collected. |
+| E-13 | Car collected while its label is being computed (the ~8 s LLM window) | The LLM upgrade still sends `CAR n <label>`, re-labelling a car that is now blank. |
+| E-16 | Very long full text for read-back | Ears chunks at <= 40 characters on word boundaries; firmware keeps 120 characters and 9 wrapped rows (3 pages). Text past that is silently dropped. |
+| E-31 | Commands sent faster than the board can print | Commands merge in the 64-byte RX buffer. Ears paces 0.35 s; the CLI `--push` paces only 0.08 s and can overrun. |
+| E-33 | A board line contains a substring that looks like an event | Ears uses unanchored `re.search`. A label is at most 18 characters, and `CAR 9 reading back` is exactly 18, so the echo `TASK 3 CAR 9 reading back` (or the lot line `1>CAR 9 reading back`) would trigger a read-back for car 9. |
+| E-35 | Serial port missing at startup | `serial.Serial()` raises and the daemon exits with a traceback. |
+| E-36 | USB unplugged while running | `readline()` raises; ears logs, sleeps 1 s, and retries `readline()` on the dead handle forever. Writes fail and are logged. |
+| E-37 | Board resets (port reopened, USB brownout) | The board forgets every car and label (unless `REMEMBER 1`). The simulator re-sends every label after connecting; ears does not, so its `tasks`/`labels` no longer match the board. |
+| E-39 | Another program holds the port (Serial Monitor, the simulator) | Open fails. |
+| E-43 | `/tmp/tasklot_*` files written by another user or left over | Watchers blank the files at startup; anything written is spoken or sent to the board. |
+
+### A.2 Test baseline at import
+
+The imported code came with three root-level test scripts: `node test_condense.js` passed
+11/11 cases, `python3 test_condense.py` 11/11 cases plus the simulator copy check, and
+`test_ears_mock.py` 6/6 checks with pyserial 3.5 and `TASKLOT_LLM=0`. All eight sketches
+compiled for the Mega 2560 (v2 used 5 % of flash), and `build/cad/audit.py` reported no
+blockers and 3 warnings (two parts need a large-bed printer; the car dimensions are
+unmeasured). The three scripts were replaced by the suites in `tools/voice/tests/`
+(`unittest` and `node --test`), which pin the same behaviour; `test_ears_mock.py` there
+is the same end-to-end check rewritten as a `unittest` case.

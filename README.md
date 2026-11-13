@@ -172,7 +172,7 @@ make firmware    # compile every sketch for the Mega 2560 (needs arduino-cli and
   fakes of the Arduino libraries: 175 unit checks across the classes, and 14 whole-sketch
   scenarios whose every serial byte and LCD frame must match transcripts recorded from
   the sketch before the refactor.
-- **Voice pipeline.** About 150 `unittest` tests covering every edge case in `DESIGN.md`
+- **Voice pipeline.** About 170 `unittest` tests covering every edge case in `DESIGN.md`
   section 5 that can be checked on a laptop, with fakes for the serial port, ffmpeg,
   whisper, the clock and the LLM.
 - **Condenser, both languages.** `node --test` for `condense.js`, a cross-language test
