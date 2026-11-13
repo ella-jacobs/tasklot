@@ -139,6 +139,7 @@ class Ears:
                 self._on_task_echo(event.car, event.label)
 
     def _on_ordering(self, car: int) -> None:
+        """A blank car passed the speaker: start recording its order."""
         if self.lot.recording == car and self.recorder.is_running():
             # A car lingering on the speaker is read again (E-09). Restarting
             # would throw away everything said so far.
@@ -153,6 +154,7 @@ class Ears:
         self.recorder.start(car, order_id)
 
     def _on_parked(self, space: int, car: int) -> None:
+        """A car arrived on a space: close any open order, then record the move."""
         # Any park closes the order on the board, so it closes here too, and
         # the recording belongs to the car that ordered, not the one that parked
         # (E-11). Closed first, so a bad space number cannot leave the mic open.
@@ -161,6 +163,7 @@ class Ears:
         self.lot.park(space, car)
 
     def _on_task_echo(self, car: int, label: str) -> None:
+        """The board echoed the label it stored for `car`."""
         # The board echoes what it stored; learning it lets a restarted daemon
         # still read a car back (E-38). An empty echo (after DONE, or CAR n with
         # no text) means the car is blank on the board, so its task is done.
@@ -181,6 +184,7 @@ class Ears:
         self.jobs.put(Job(car, order_id, path))
 
     def _on_playback(self, car: int) -> None:
+        """A labelled car passed the speaker: send its full text for the read-back."""
         # The whole task goes on the glass, paged by the board. Nothing is spoken.
         full = self.lot.full_text(car)
         if not full:
@@ -191,6 +195,7 @@ class Ears:
         self.log(f"[show] CAR {car}: {full!r} on the glass")
 
     def _on_collected(self, car: int) -> None:
+        """A car went through the pickup lane: its task is done."""
         if self.lot.recording == car:
             # Carried straight from the speaker to the pickup lane: the order
             # is cancelled, not transcribed for a car that is now blank (E-12).
@@ -216,6 +221,7 @@ class Ears:
                 _remove(job.path)
 
     def _work(self, job: Job) -> None:
+        """The body of work_once(); may raise, and work_once() logs it."""
         car = job.car
         self.log("[whisper] transcribing...")
         text = self.transcriber.transcribe(job.path)
@@ -259,6 +265,7 @@ class Ears:
             self.send(car_command(car, better))
 
     def _still_current(self, job: Job, what: str) -> bool:
+        """True if the job's order is still current; otherwise logs that `what` was dropped."""
         if self.lot.is_current(job.car, job.order_id):
             return True
         self.log(f"[task] CAR {job.car}: dropped stale {what} (collected or re-ordered)")
@@ -326,6 +333,7 @@ class Ears:
                 self.log(f"[{tag}] !! {exc}")
 
     def _say(self, text: str) -> None:
+        """Speak a line from the say inbox, if a Speaker is configured."""
         if self.speaker is not None:
             self.speaker.speak(text)
 
@@ -379,6 +387,7 @@ class Ears:
             self.recorder.stop()
 
     def _worker_loop(self) -> None:
+        """Worker thread: run queued transcription jobs until stopped."""
         while not self.stop_event.is_set():
             try:
                 job = self.jobs.get(timeout=CAP_CHECK_INTERVAL_S)
@@ -388,6 +397,7 @@ class Ears:
             self.jobs.task_done()
 
     def _capper_loop(self) -> None:
+        """Capper thread: close an order nobody parked, once a second."""
         while not self.stop_event.wait(CAP_CHECK_INTERVAL_S):
             try:
                 self.check_cap()
@@ -395,6 +405,7 @@ class Ears:
                 self.log(f"[capper] !! {exc}")
 
     def _inbox_loop(self) -> None:
+        """Inbox thread: poll the side-channel files until stopped."""
         while not self.stop_event.wait(INBOX_POLL_INTERVAL_S):
             self.poll_inboxes()
 

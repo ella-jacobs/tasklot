@@ -169,9 +169,11 @@ class OfflineTool:
 
     @staticmethod
     def _audio_files(folder: Path) -> set[str]:
+        """Names of the audio files directly in `folder`."""
         return {p.name for p in folder.iterdir() if p.name.lower().endswith(AUDIO_EXTENSIONS)}
 
     def _wait_for_copy(self, path: Path) -> None:
+        """Return once the file's size stops changing (a copy has finished)."""
         size = -1
         while size != path.stat().st_size:
             size = path.stat().st_size
@@ -209,7 +211,8 @@ class OfflineTool:
         return reply
 
     def _default_link(self, port: str) -> SerialLink:
-        # Progress lines go to stderr, matching the original tool's output.
+        """A paced SerialLink for --push that logs nothing: push() prints its own
+        progress to stderr, matching the original tool's output."""
         return SerialLink(port, self.settings.baud, pacing=self.settings.pacing,
                           reset_delay=self.settings.reset_delay,
                           log=lambda message: None)

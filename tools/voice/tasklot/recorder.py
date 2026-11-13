@@ -195,7 +195,5 @@ def _remove(path: Optional[Path]) -> None:
         return
     try:
         path.unlink()
-    except FileNotFoundError:
-        pass
-    except OSError:
+    except OSError:  # includes FileNotFoundError
         pass

@@ -83,6 +83,7 @@ class Lot:
         return self.order_id(car) == order_id
 
     def _bump(self, car: int) -> int:
+        """Advance the car's order id, invalidating results started under the old one."""
         self._order_ids[car] = self.order_id(car) + 1
         return self._order_ids[car]
 
@@ -190,11 +191,13 @@ class Lot:
         return out
 
     def _space_index(self, space: int) -> int:
+        """0-based index of a 1-based space. Raises ValueError if out of range."""
         if not 1 <= space <= len(self.spaces):
             raise ValueError(f"space {space} is not 1..{len(self.spaces)}")
         return space - 1
 
     def _release(self, car: int) -> None:
+        """Empty whichever space holds `car`."""
         for i, parked in enumerate(self.spaces):
             if parked == car:
                 self.spaces[i] = None
