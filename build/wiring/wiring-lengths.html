@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskLot Wiring Lengths</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #3EC1C7;
+    --teal-dark: #1F8A9E;
+    --cream: #ECEEF1;
+    --off: #E0F5F6;
+    --ink: #1a1a1a;
+    --paper: #F3F4F6;
+    --navy: #142850;
+    --gold: #F5C518;
+    --green: #3AAA6A;
+    --pink: #E8609A;
+    --purple: #9A3DBF;
+    --haribo: #E3001B;
+    --rule: #d8d2bf;
+    --muted: #5a5346;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 28px 96px; }
+
+  /* HERO — full bleed: edge-to-edge top/left/right, square edges */
+  .hero {
+    background: var(--teal);
+    color: #ffffff;
+    padding: 68px 28px 56px;
+    margin-bottom: 36px;
+  }
+  .hero-inner {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+  .eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--cream);
+    margin: 0 0 18px;
+  }
+  .hero h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: clamp(36px, 5.4vw, 64px);
+    line-height: 1.02;
+    margin: 0 0 16px;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 em { font-style: italic; font-weight: 700; opacity: 0.92; }
+  .hero p.lede {
+    font-size: 18px;
+    max-width: 56ch;
+    margin: 0;
+    color: var(--cream);
+  }
+  .hero .meta {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .chip {
+    background: rgba(236, 238, 241, 0.18);
+    border: 1px solid rgba(236, 238, 241, 0.4);
+    color: var(--cream);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 6px 11px;
+    border-radius: 999px;
+  }
+
+  /* SECTION HEADINGS */
+  h2 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: 28px;
+    margin: 56px 0 8px;
+    letter-spacing: -0.01em;
+  }
+  h2 .num {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    color: var(--navy);
+    font-size: 14px;
+    margin-right: 12px;
+    vertical-align: 0.22em;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0 0 22px;
+  }
+
+  /* GENERIC CARDS */
+  .card {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 14px;
+  }
+  .card.tinted { background: var(--off); border-color: #b9e3e5; }
+  .card.cream { background: var(--cream); border-color: #e3e5e8; }
+
+  /* LINE ITEMS — checkbox / content / tag */
+  .lineitem {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 14px;
+    padding: 11px 0;
+    border-bottom: 1px dashed var(--rule);
+    align-items: baseline;
+  }
+  .lineitem:last-child { border-bottom: 0; }
+
+  input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--teal-dark);
+    border-radius: 5px;
+    background: white;
+    cursor: pointer;
+    position: relative;
+    justify-self: center;
+    margin: 0;
+    align-self: center;
+  }
+  .card.tinted input[type="checkbox"] { background: var(--off); }
+  .card.cream input[type="checkbox"] { background: var(--cream); }
+  input[type="checkbox"]:checked {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .card.cream input[type="checkbox"]:checked {
+    background: var(--pink);
+    border-color: var(--pink);
+  }
+  input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 4px;
+    top: 0;
+    width: 6px;
+    height: 12px;
+    border: solid white;
+    border-width: 0 2.5px 2.5px 0;
+    transform: rotate(45deg);
+  }
+
+  .what { font-weight: 600; cursor: pointer; }
+  .what small {
+    display: block;
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 2px;
+  }
+  .tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .card.tinted .tag { background: white; }
+  .card.cream  .tag { background: white; }
+
+  input[type="checkbox"]:checked ~ .what,
+  input[type="checkbox"]:checked + .what {
+    text-decoration: line-through;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+
+  /* TERM-STYLE WEEK CARDS */
+  .week {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .day {
+    background: white;
+    border: 1px solid var(--rule);
+    border-left: 6px solid var(--teal);
+    border-radius: 12px;
+    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 18px;
+    align-items: start;
+  }
+  .day.weekend { border-left-color: var(--navy); background: #eef1f8; }
+  .day .when {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--teal-dark);
+  }
+  .day.weekend .when { color: var(--navy); }
+  .day .when small {
+    display: block;
+    font-weight: 400;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 2px;
+  }
+  .day .items { margin: 0; padding: 0; list-style: none; }
+  .day .items li {
+    font-size: 14px;
+    padding: 4px 0;
+  }
+  .day .items li b { font-weight: 700; }
+  .day .items li em {
+    font-style: normal;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    margin-left: 6px;
+  }
+
+  /* NOTES BLOCK */
+  .notes {
+    background: var(--cream);
+    border: 1px solid #e3e5e8;
+    border-left: 6px solid var(--purple);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-top: 28px;
+  }
+  .notes h3 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    margin: 0 0 8px;
+  }
+  .notes ul { margin: 8px 0 0; padding-left: 18px; }
+  .notes li { margin: 6px 0; font-size: 14.5px; }
+  .notes.finals-notes { border-left-color: var(--haribo); }
+
+  /* FOOTER */
+  .footer {
+    background: var(--ink);
+    color: var(--cream);
+    border-radius: 14px;
+    padding: 26px 28px;
+    margin-top: 56px;
+    font-size: 14px;
+  }
+  .footer .label {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin: 0 0 8px;
+  }
+  .footer p { margin: 4px 0; opacity: 0.9; }
+
+  /* CREDIT — teal full-bleed strip, the last element on the page. A direct
+     child of <body>, OUTSIDE .wrap, so it bleeds edge-to-edge like the hero. */
+  .credit {
+    background: var(--teal);
+    color: var(--cream);
+    margin: 40px 0 0;
+    padding: 10px 28px;
+    text-align: right;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  @media (max-width: 720px) {
+    .day { grid-template-columns: 1fr; }
+    .hero { padding: 40px 28px 36px; }
+    .lineitem { grid-template-columns: 24px 1fr; }
+    .lineitem .tag { grid-column: 2; justify-self: start; margin-top: 4px; }
+  }
+</style>
+
+<style>
+  .wrap { max-width: 1080px; }
+  table.cut { width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; }
+  table.cut th { text-align:left; font-family:'Space Mono',ui-monospace,monospace; font-size:11px;
+                 letter-spacing:.06em; text-transform:uppercase; color:var(--muted);
+                 border-bottom:2px solid var(--rule); padding:8px 10px; }
+  table.cut td { padding:8px 10px; border-bottom:1px solid #e8e5da; vertical-align:top; }
+  table.cut tr.hl td { background:#f7ecfb; }
+  table.cut tfoot td { border-bottom:none; border-top:2px solid var(--rule); font-weight:700; }
+  .mono { font-family:'Space Mono',ui-monospace,monospace; }
+  .num { text-align:right; white-space:nowrap; }
+  .big { font-size:16px; font-weight:700; color:var(--teal-dark); }
+  .tiny { font-size:11px; color:var(--muted); }
+  .figure { background:#fff; border:1px solid var(--rule); border-radius:14px; padding:18px; margin:18px 0; overflow-x:auto; }
+  .figure svg { display:block; width:100%; height:auto; }
+  .figcap { font-family:'Space Mono',ui-monospace,monospace; font-size:12px; color:var(--muted); margin-top:12px; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .keynum { font-family:'Space Mono',ui-monospace,monospace; font-size:34px; font-weight:700;
+            color:var(--teal-dark); line-height:1; }
+  .keylab { font-size:13px; color:var(--muted); margin-top:6px; }
+  code { font-family:'Space Mono',ui-monospace,monospace; background:#eef0f2; padding:1px 5px;
+         border-radius:4px; font-size:.92em; }
+  ul.tight li { margin-bottom:9px; }
+  .swatch { display:inline-block; width:11px; height:11px; border-radius:2px; vertical-align:baseline;
+            margin-right:5px; border:1px solid rgba(0,0,0,.15); }
+  @media (max-width:720px){ .cols { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">TaskLot &middot; wiring pack &middot; 24 Aug 2026</p>
+    <h1>How long does every wire need to be, <em>and what goes where</em></h1>
+    <p class="lede">Six RC522 readers hang under a 330 &times; 270 mm deck. Six of their seven
+    wires are shared &mdash; that is the &ldquo;parallel&rdquo; part &mdash; and one, the chip
+    select, is not. Below: the topology, a to-scale plan you can print at 100%, and a cut list
+    in millimetres.</p>
+    <div class="meta">
+      <span class="chip">deck 330 &times; 270 mm</span>
+      <span class="chip">6 readers</span>
+      <span class="chip">~10.9 m of wire</span>
+      <span class="chip">Elegoo Mega 2560</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<h2><span class="num">01</span> Read this before you cut anything</h2>
+<p class="sub">Three facts that change the numbers.</p>
+
+<div class="notes">
+  <p><strong>1. The reader slot is 4.90&nbsp;mm total, and the board is 1.6&nbsp;mm of that.</strong>
+  That leaves <strong>3.30&nbsp;mm</strong> of clear space between the top of the PCB and the
+  underside of the deck. A normal 2.54&nbsp;mm pin header sticks up about 8.5&nbsp;mm, and a female
+  Dupont plug on top of it more. <strong>A vertical header facing the deck will not fit.</strong>
+  Your two options are to <strong>solder the wires flat onto the pads</strong> (lowest, and it also
+  gets the antenna closest to the car, which is where the read range comes from), or to fit a
+  <strong>right-angle header pointing out the open end of the channel</strong>.</p>
+
+  <p><strong>2. Print the fit-test holder first.</strong> It exists exactly for this &mdash;
+  <code>build/cad/exports/tasklot-reader-holder-glue.stl</code>, ~30&nbsp;min. Slide a real, wired RC522 in
+  and see it seat before six holders get glued to a deck. The number the CAD is least sure of is
+  <code>reader_header_underside&nbsp;=&nbsp;2.5&nbsp;mm</code>, which is still a guess &mdash;
+  caliper the real board's underside and update the CAD parameter.</p>
+
+  <p><strong>3. The Mega has one 3V3 pin, and you need to feed six readers from it.</strong>
+  You physically cannot plug two wires into one header pin, so <strong>a junction is not optional</strong>.
+  That is what the bus rail in the diagram is. It is also why the wire plan below is the shape it is.</p>
+</div>
+
+<h2><span class="num">02</span> The topology</h2>
+<p class="sub">What &ldquo;in parallel&rdquo; actually means here: six wires everybody shares, one wire each that nobody shares.</p>
+
+<div class="figure">
+<svg viewBox="0 0 1030 560" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="'Space Mono',ui-monospace,monospace">
+<rect width="1030" height="560" fill="#ffffff"/>
+<rect x="16" y="238" width="104" height="272" rx="6" fill="#f7ecfb" stroke="#9A3DBF" stroke-width="2"/>
+<text x="68" y="270" font-size="16" font-weight="700" text-anchor="middle" fill="#9A3DBF">MEGA</text>
+<text x="68" y="288" font-size="11" text-anchor="middle" fill="#9A3DBF">2560</text>
+<rect x="150" y="236" width="26" height="118" rx="4" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="1.6"/>
+<text x="163" y="297" font-size="10" font-weight="700" text-anchor="middle" fill="#1F8A9E" transform="rotate(-90 163 297)">BUS RAIL</text>
+<line x1="120" y1="250" x2="150" y2="250" stroke="#E3001B" stroke-width="3"/>
+<line x1="176" y1="250" x2="867.0" y2="250" stroke="#E3001B" stroke-width="3"/>
+<text x="889.0" y="254" font-size="11" font-weight="700" fill="#E3001B">3V3</text>
+<text x="959.0" y="254" font-size="9.5" fill="#8a8375">red</text>
+<line x1="120" y1="268" x2="150" y2="268" stroke="#1a1a1a" stroke-width="3"/>
+<line x1="176" y1="268" x2="867.0" y2="268" stroke="#1a1a1a" stroke-width="3"/>
+<text x="889.0" y="272" font-size="11" font-weight="700" fill="#1a1a1a">GND</text>
+<text x="959.0" y="272" font-size="9.5" fill="#8a8375">black</text>
+<line x1="120" y1="286" x2="150" y2="286" stroke="#1F8A9E" stroke-width="3"/>
+<line x1="176" y1="286" x2="867.0" y2="286" stroke="#1F8A9E" stroke-width="3"/>
+<text x="889.0" y="290" font-size="11" font-weight="700" fill="#1F8A9E">SCK 52</text>
+<text x="959.0" y="290" font-size="9.5" fill="#8a8375">yellow</text>
+<line x1="120" y1="304" x2="150" y2="304" stroke="#3EC1C7" stroke-width="3"/>
+<line x1="176" y1="304" x2="867.0" y2="304" stroke="#3EC1C7" stroke-width="3"/>
+<text x="889.0" y="308" font-size="11" font-weight="700" fill="#3EC1C7">MOSI 51</text>
+<text x="959.0" y="308" font-size="9.5" fill="#8a8375">green</text>
+<line x1="120" y1="322" x2="150" y2="322" stroke="#3AAA6A" stroke-width="3"/>
+<line x1="176" y1="322" x2="867.0" y2="322" stroke="#3AAA6A" stroke-width="3"/>
+<text x="889.0" y="326" font-size="11" font-weight="700" fill="#3AAA6A">MISO 50</text>
+<text x="959.0" y="326" font-size="9.5" fill="#8a8375">blue</text>
+<line x1="120" y1="340" x2="150" y2="340" stroke="#9A3DBF" stroke-width="3"/>
+<line x1="176" y1="340" x2="867.0" y2="340" stroke="#9A3DBF" stroke-width="3"/>
+<text x="889.0" y="344" font-size="11" font-weight="700" fill="#9A3DBF">RST A0</text>
+<text x="959.0" y="344" font-size="9.5" fill="#8a8375">white</text>
+<line x1="120" y1="398" x2="290.0" y2="398" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<text x="298.0" y="402" font-size="10.5" font-weight="700" fill="#142850">SS 44</text>
+<text x="126" y="393" font-size="10" fill="#142850">Mega pin 44</text>
+<line x1="120" y1="416" x2="408.0" y2="416" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<text x="416.0" y="420" font-size="10.5" font-weight="700" fill="#142850">SS 45</text>
+<text x="126" y="411" font-size="10" fill="#142850">Mega pin 45</text>
+<line x1="120" y1="434" x2="526.0" y2="434" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<text x="534.0" y="438" font-size="10.5" font-weight="700" fill="#142850">SS 40</text>
+<text x="126" y="429" font-size="10" fill="#142850">Mega pin 40</text>
+<line x1="120" y1="452" x2="644.0" y2="452" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<text x="652.0" y="456" font-size="10.5" font-weight="700" fill="#142850">SS 41</text>
+<text x="126" y="447" font-size="10" fill="#142850">Mega pin 41</text>
+<line x1="120" y1="470" x2="762.0" y2="470" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<text x="770.0" y="474" font-size="10.5" font-weight="700" fill="#142850">SS 36</text>
+<text x="126" y="465" font-size="10" fill="#142850">Mega pin 36</text>
+<line x1="120" y1="488" x2="880.0" y2="488" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<text x="888.0" y="492" font-size="10.5" font-weight="700" fill="#142850">SS 37</text>
+<text x="126" y="483" font-size="10" fill="#142850">Mega pin 37</text>
+<rect x="196" y="34" width="100" height="104" rx="6" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="2"/>
+<text x="246" y="66" font-size="19" font-weight="700" text-anchor="middle" fill="#1F8A9E">R1</text>
+<text x="246" y="84" font-size="9.5" text-anchor="middle" fill="#5a5346">SPACE 1</text>
+<text x="246" y="102" font-size="9.5" text-anchor="middle" fill="#5a5346">RC522</text>
+<text x="246" y="124" font-size="11" font-weight="700" text-anchor="middle" fill="#142850">SS 44</text>
+<line x1="209.0" y1="138" x2="209.0" y2="250" stroke="#E3001B" stroke-width="2"/>
+<circle cx="209.0" cy="250" r="3.2" fill="#E3001B"/>
+<line x1="222.6" y1="138" x2="222.6" y2="268" stroke="#1a1a1a" stroke-width="2"/>
+<circle cx="222.6" cy="268" r="3.2" fill="#1a1a1a"/>
+<line x1="236.2" y1="138" x2="236.2" y2="286" stroke="#1F8A9E" stroke-width="2"/>
+<circle cx="236.2" cy="286" r="3.2" fill="#1F8A9E"/>
+<line x1="249.8" y1="138" x2="249.8" y2="304" stroke="#3EC1C7" stroke-width="2"/>
+<circle cx="249.8" cy="304" r="3.2" fill="#3EC1C7"/>
+<line x1="263.4" y1="138" x2="263.4" y2="322" stroke="#3AAA6A" stroke-width="2"/>
+<circle cx="263.4" cy="322" r="3.2" fill="#3AAA6A"/>
+<line x1="277.0" y1="138" x2="277.0" y2="340" stroke="#9A3DBF" stroke-width="2"/>
+<circle cx="277.0" cy="340" r="3.2" fill="#9A3DBF"/>
+<line x1="290.0" y1="138" x2="290.0" y2="398" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<circle cx="290.0" cy="398" r="3.2" fill="#142850"/>
+<rect x="314" y="34" width="100" height="104" rx="6" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="2"/>
+<text x="364" y="66" font-size="19" font-weight="700" text-anchor="middle" fill="#1F8A9E">R2</text>
+<text x="364" y="84" font-size="9.5" text-anchor="middle" fill="#5a5346">SPACE 2</text>
+<text x="364" y="102" font-size="9.5" text-anchor="middle" fill="#5a5346">RC522</text>
+<text x="364" y="124" font-size="11" font-weight="700" text-anchor="middle" fill="#142850">SS 45</text>
+<line x1="327.0" y1="138" x2="327.0" y2="250" stroke="#E3001B" stroke-width="2"/>
+<circle cx="327.0" cy="250" r="3.2" fill="#E3001B"/>
+<line x1="340.6" y1="138" x2="340.6" y2="268" stroke="#1a1a1a" stroke-width="2"/>
+<circle cx="340.6" cy="268" r="3.2" fill="#1a1a1a"/>
+<line x1="354.2" y1="138" x2="354.2" y2="286" stroke="#1F8A9E" stroke-width="2"/>
+<circle cx="354.2" cy="286" r="3.2" fill="#1F8A9E"/>
+<line x1="367.8" y1="138" x2="367.8" y2="304" stroke="#3EC1C7" stroke-width="2"/>
+<circle cx="367.8" cy="304" r="3.2" fill="#3EC1C7"/>
+<line x1="381.4" y1="138" x2="381.4" y2="322" stroke="#3AAA6A" stroke-width="2"/>
+<circle cx="381.4" cy="322" r="3.2" fill="#3AAA6A"/>
+<line x1="395.0" y1="138" x2="395.0" y2="340" stroke="#9A3DBF" stroke-width="2"/>
+<circle cx="395.0" cy="340" r="3.2" fill="#9A3DBF"/>
+<line x1="408.0" y1="138" x2="408.0" y2="416" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<circle cx="408.0" cy="416" r="3.2" fill="#142850"/>
+<rect x="432" y="34" width="100" height="104" rx="6" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="2"/>
+<text x="482" y="66" font-size="19" font-weight="700" text-anchor="middle" fill="#1F8A9E">R3</text>
+<text x="482" y="84" font-size="9.5" text-anchor="middle" fill="#5a5346">SPACE 3</text>
+<text x="482" y="102" font-size="9.5" text-anchor="middle" fill="#5a5346">RC522</text>
+<text x="482" y="124" font-size="11" font-weight="700" text-anchor="middle" fill="#142850">SS 40</text>
+<line x1="445.0" y1="138" x2="445.0" y2="250" stroke="#E3001B" stroke-width="2"/>
+<circle cx="445.0" cy="250" r="3.2" fill="#E3001B"/>
+<line x1="458.6" y1="138" x2="458.6" y2="268" stroke="#1a1a1a" stroke-width="2"/>
+<circle cx="458.6" cy="268" r="3.2" fill="#1a1a1a"/>
+<line x1="472.2" y1="138" x2="472.2" y2="286" stroke="#1F8A9E" stroke-width="2"/>
+<circle cx="472.2" cy="286" r="3.2" fill="#1F8A9E"/>
+<line x1="485.8" y1="138" x2="485.8" y2="304" stroke="#3EC1C7" stroke-width="2"/>
+<circle cx="485.8" cy="304" r="3.2" fill="#3EC1C7"/>
+<line x1="499.4" y1="138" x2="499.4" y2="322" stroke="#3AAA6A" stroke-width="2"/>
+<circle cx="499.4" cy="322" r="3.2" fill="#3AAA6A"/>
+<line x1="513.0" y1="138" x2="513.0" y2="340" stroke="#9A3DBF" stroke-width="2"/>
+<circle cx="513.0" cy="340" r="3.2" fill="#9A3DBF"/>
+<line x1="526.0" y1="138" x2="526.0" y2="434" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<circle cx="526.0" cy="434" r="3.2" fill="#142850"/>
+<rect x="550" y="34" width="100" height="104" rx="6" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="2"/>
+<text x="600" y="66" font-size="19" font-weight="700" text-anchor="middle" fill="#1F8A9E">R4</text>
+<text x="600" y="84" font-size="9.5" text-anchor="middle" fill="#5a5346">SPACE 4</text>
+<text x="600" y="102" font-size="9.5" text-anchor="middle" fill="#5a5346">RC522</text>
+<text x="600" y="124" font-size="11" font-weight="700" text-anchor="middle" fill="#142850">SS 41</text>
+<line x1="563.0" y1="138" x2="563.0" y2="250" stroke="#E3001B" stroke-width="2"/>
+<circle cx="563.0" cy="250" r="3.2" fill="#E3001B"/>
+<line x1="576.6" y1="138" x2="576.6" y2="268" stroke="#1a1a1a" stroke-width="2"/>
+<circle cx="576.6" cy="268" r="3.2" fill="#1a1a1a"/>
+<line x1="590.2" y1="138" x2="590.2" y2="286" stroke="#1F8A9E" stroke-width="2"/>
+<circle cx="590.2" cy="286" r="3.2" fill="#1F8A9E"/>
+<line x1="603.8" y1="138" x2="603.8" y2="304" stroke="#3EC1C7" stroke-width="2"/>
+<circle cx="603.8" cy="304" r="3.2" fill="#3EC1C7"/>
+<line x1="617.4" y1="138" x2="617.4" y2="322" stroke="#3AAA6A" stroke-width="2"/>
+<circle cx="617.4" cy="322" r="3.2" fill="#3AAA6A"/>
+<line x1="631.0" y1="138" x2="631.0" y2="340" stroke="#9A3DBF" stroke-width="2"/>
+<circle cx="631.0" cy="340" r="3.2" fill="#9A3DBF"/>
+<line x1="644.0" y1="138" x2="644.0" y2="452" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<circle cx="644.0" cy="452" r="3.2" fill="#142850"/>
+<rect x="668" y="34" width="100" height="104" rx="6" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="2"/>
+<text x="718" y="66" font-size="19" font-weight="700" text-anchor="middle" fill="#1F8A9E">R5</text>
+<text x="718" y="84" font-size="9.5" text-anchor="middle" fill="#5a5346">RECORD</text>
+<text x="718" y="102" font-size="9.5" text-anchor="middle" fill="#5a5346">RC522</text>
+<text x="718" y="124" font-size="11" font-weight="700" text-anchor="middle" fill="#142850">SS 36</text>
+<line x1="681.0" y1="138" x2="681.0" y2="250" stroke="#E3001B" stroke-width="2"/>
+<circle cx="681.0" cy="250" r="3.2" fill="#E3001B"/>
+<line x1="694.6" y1="138" x2="694.6" y2="268" stroke="#1a1a1a" stroke-width="2"/>
+<circle cx="694.6" cy="268" r="3.2" fill="#1a1a1a"/>
+<line x1="708.2" y1="138" x2="708.2" y2="286" stroke="#1F8A9E" stroke-width="2"/>
+<circle cx="708.2" cy="286" r="3.2" fill="#1F8A9E"/>
+<line x1="721.8" y1="138" x2="721.8" y2="304" stroke="#3EC1C7" stroke-width="2"/>
+<circle cx="721.8" cy="304" r="3.2" fill="#3EC1C7"/>
+<line x1="735.4" y1="138" x2="735.4" y2="322" stroke="#3AAA6A" stroke-width="2"/>
+<circle cx="735.4" cy="322" r="3.2" fill="#3AAA6A"/>
+<line x1="749.0" y1="138" x2="749.0" y2="340" stroke="#9A3DBF" stroke-width="2"/>
+<circle cx="749.0" cy="340" r="3.2" fill="#9A3DBF"/>
+<line x1="762.0" y1="138" x2="762.0" y2="470" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<circle cx="762.0" cy="470" r="3.2" fill="#142850"/>
+<rect x="786" y="34" width="100" height="104" rx="6" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="2"/>
+<text x="836" y="66" font-size="19" font-weight="700" text-anchor="middle" fill="#1F8A9E">R6</text>
+<text x="836" y="84" font-size="9.5" text-anchor="middle" fill="#5a5346">DRIVE-THRU</text>
+<text x="836" y="102" font-size="9.5" text-anchor="middle" fill="#5a5346">RC522</text>
+<text x="836" y="124" font-size="11" font-weight="700" text-anchor="middle" fill="#142850">SS 37</text>
+<line x1="799.0" y1="138" x2="799.0" y2="250" stroke="#E3001B" stroke-width="2"/>
+<circle cx="799.0" cy="250" r="3.2" fill="#E3001B"/>
+<line x1="812.6" y1="138" x2="812.6" y2="268" stroke="#1a1a1a" stroke-width="2"/>
+<circle cx="812.6" cy="268" r="3.2" fill="#1a1a1a"/>
+<line x1="826.2" y1="138" x2="826.2" y2="286" stroke="#1F8A9E" stroke-width="2"/>
+<circle cx="826.2" cy="286" r="3.2" fill="#1F8A9E"/>
+<line x1="839.8" y1="138" x2="839.8" y2="304" stroke="#3EC1C7" stroke-width="2"/>
+<circle cx="839.8" cy="304" r="3.2" fill="#3EC1C7"/>
+<line x1="853.4" y1="138" x2="853.4" y2="322" stroke="#3AAA6A" stroke-width="2"/>
+<circle cx="853.4" cy="322" r="3.2" fill="#3AAA6A"/>
+<line x1="867.0" y1="138" x2="867.0" y2="340" stroke="#9A3DBF" stroke-width="2"/>
+<circle cx="867.0" cy="340" r="3.2" fill="#9A3DBF"/>
+<line x1="880.0" y1="138" x2="880.0" y2="488" stroke="#142850" stroke-width="2" stroke-dasharray="7 4"/>
+<circle cx="880.0" cy="488" r="3.2" fill="#142850"/>
+<text x="16" y="20" font-size="13" font-weight="700" fill="#142850">SIX READERS IN PARALLEL &#8212; six wires shared by everybody, one wire each that is not</text>
+<text x="16" y="536" font-size="10.5" fill="#5a5346">A dot is a connection. Crossings without a dot are not connected. IRQ is left unconnected on every reader.</text>
+<text x="16" y="552" font-size="10.5" fill="#5a5346">The wire colours are a suggestion &#8212; keep them consistent and a mis-wire becomes visible instead of invisible.</text>
+</svg>
+  <p class="figcap">Six shared conductors (3V3, GND, SCK&nbsp;52, MOSI&nbsp;51, MISO&nbsp;50, RST&nbsp;A0)
+  run from the Mega to a bus rail, then branch once to each reader. The chip-select line is the only
+  thing that makes reader&nbsp;3 different from reader&nbsp;4, and it gets its own wire back to its own
+  Mega pin. <strong>IRQ is not connected on any reader.</strong></p>
+</div>
+
+<div class="cols">
+  <div class="card tinted">
+    <p class="mono" style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal-dark);margin:0 0 10px">Shared &mdash; 6 conductors</p>
+    <ul class="tight" style="margin:0;padding-left:18px;font-size:14px">
+      <li><span class="swatch" style="background:#E3001B"></span><strong>3V3</strong> &rarr; Mega 3V3. <strong>Never 5&nbsp;V.</strong> It kills the reader instantly.</li>
+      <li><span class="swatch" style="background:#1a1a1a"></span><strong>GND</strong> &rarr; any Mega GND</li>
+      <li><span class="swatch" style="background:#1F8A9E"></span><strong>SCK</strong> &rarr; pin 52</li>
+      <li><span class="swatch" style="background:#3EC1C7"></span><strong>MOSI</strong> &rarr; pin 51</li>
+      <li><span class="swatch" style="background:#3AAA6A"></span><strong>MISO</strong> &rarr; pin 50</li>
+      <li><span class="swatch" style="background:#9A3DBF"></span><strong>RST</strong> &rarr; A0</li>
+    </ul>
+  </div>
+  <div class="card">
+    <p class="mono" style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin:0 0 10px">Not shared &mdash; 1 each</p>
+    <ul class="tight" style="margin:0;padding-left:18px;font-size:14px">
+      <li><strong>R1</strong> space 1 &rarr; SS <strong>44</strong></li>
+      <li><strong>R2</strong> space 2 &rarr; SS <strong>45</strong></li>
+      <li><strong>R3</strong> space 3 &rarr; SS <strong>40</strong></li>
+      <li><strong>R4</strong> space 4 &rarr; SS <strong>41</strong></li>
+      <li><strong>R5</strong> record &rarr; SS <strong>36</strong></li>
+      <li><strong>R6</strong> drive-through &rarr; SS <strong>37</strong></li>
+    </ul>
+    <p class="tiny" style="margin:12px 0 0">Pins 44/45/40/41 are what <code>firmware/tasklot_full</code>
+    already declares. 36 and 37 come from <code>firmware/six_reader_check</code>. Don't renumber them.</p>
+  </div>
+</div>
+
+<h2><span class="num">03</span> The plan, to scale</h2>
+<p class="sub">Deck coordinates in millimetres, origin at the front-left corner. Print at 100% and it is a 1:1 template.</p>
+
+<div class="figure">
+<svg xmlns="http://www.w3.org/2000/svg" width="346.0mm" height="366.0mm" viewBox="0 0 346.0 366.0">
+<rect width="346.0" height="366.0" fill="#ffffff"/>
+<text x="8.0" y="13" font-family="monospace" font-size="8" font-weight="700" fill="#142850">TASKLOT - UNDERSIDE WIRING PLAN</text>
+<text x="8.0" y="21.5" font-family="monospace" font-size="4.6" fill="#5a5346">deck 330 x 270 mm, viewed from ABOVE. Print at 100% and MIRROR IN X before tracing on the flipped deck.</text>
+<text x="8.0" y="28.5" font-family="monospace" font-size="4.6" fill="#5a5346">Lengths shown are straight-line routes. Cut list on the wiring page adds vertical drop, routing and a service loop.</text>
+<line x1="8.0" y1="30.0" x2="338.0" y2="30.0" stroke="#d8d2bf" stroke-width="0.5"/>
+<g transform="translate(8.0,34.0)">
+<rect x="0.4" y="0.4" width="329.2" height="269.2" rx="5" fill="none" stroke="#1a1a1a" stroke-width="0.8"/>
+<g stroke="#dfe3e6" stroke-width="0.2"><line x1="0" y1="0" x2="0" y2="270"/><line x1="10" y1="0" x2="10" y2="270"/><line x1="20" y1="0" x2="20" y2="270"/><line x1="30" y1="0" x2="30" y2="270"/><line x1="40" y1="0" x2="40" y2="270"/><line x1="50" y1="0" x2="50" y2="270"/><line x1="60" y1="0" x2="60" y2="270"/><line x1="70" y1="0" x2="70" y2="270"/><line x1="80" y1="0" x2="80" y2="270"/><line x1="90" y1="0" x2="90" y2="270"/><line x1="100" y1="0" x2="100" y2="270"/><line x1="110" y1="0" x2="110" y2="270"/><line x1="120" y1="0" x2="120" y2="270"/><line x1="130" y1="0" x2="130" y2="270"/><line x1="140" y1="0" x2="140" y2="270"/><line x1="150" y1="0" x2="150" y2="270"/><line x1="160" y1="0" x2="160" y2="270"/><line x1="170" y1="0" x2="170" y2="270"/><line x1="180" y1="0" x2="180" y2="270"/><line x1="190" y1="0" x2="190" y2="270"/><line x1="200" y1="0" x2="200" y2="270"/><line x1="210" y1="0" x2="210" y2="270"/><line x1="220" y1="0" x2="220" y2="270"/><line x1="230" y1="0" x2="230" y2="270"/><line x1="240" y1="0" x2="240" y2="270"/><line x1="250" y1="0" x2="250" y2="270"/><line x1="260" y1="0" x2="260" y2="270"/><line x1="270" y1="0" x2="270" y2="270"/><line x1="280" y1="0" x2="280" y2="270"/><line x1="290" y1="0" x2="290" y2="270"/><line x1="300" y1="0" x2="300" y2="270"/><line x1="310" y1="0" x2="310" y2="270"/><line x1="320" y1="0" x2="320" y2="270"/><line x1="330" y1="0" x2="330" y2="270"/><line x1="0" y1="0" x2="330" y2="0"/><line x1="0" y1="10" x2="330" y2="10"/><line x1="0" y1="20" x2="330" y2="20"/><line x1="0" y1="30" x2="330" y2="30"/><line x1="0" y1="40" x2="330" y2="40"/><line x1="0" y1="50" x2="330" y2="50"/><line x1="0" y1="60" x2="330" y2="60"/><line x1="0" y1="70" x2="330" y2="70"/><line x1="0" y1="80" x2="330" y2="80"/><line x1="0" y1="90" x2="330" y2="90"/><line x1="0" y1="100" x2="330" y2="100"/><line x1="0" y1="110" x2="330" y2="110"/><line x1="0" y1="120" x2="330" y2="120"/><line x1="0" y1="130" x2="330" y2="130"/><line x1="0" y1="140" x2="330" y2="140"/><line x1="0" y1="150" x2="330" y2="150"/><line x1="0" y1="160" x2="330" y2="160"/><line x1="0" y1="170" x2="330" y2="170"/><line x1="0" y1="180" x2="330" y2="180"/><line x1="0" y1="190" x2="330" y2="190"/><line x1="0" y1="200" x2="330" y2="200"/><line x1="0" y1="210" x2="330" y2="210"/><line x1="0" y1="220" x2="330" y2="220"/><line x1="0" y1="230" x2="330" y2="230"/><line x1="0" y1="240" x2="330" y2="240"/><line x1="0" y1="250" x2="330" y2="250"/><line x1="0" y1="260" x2="330" y2="260"/><line x1="0" y1="270" x2="330" y2="270"/></g>
+<g stroke="#c3cbd1" stroke-width="0.35"><line x1="0" y1="0" x2="0" y2="270"/><line x1="50" y1="0" x2="50" y2="270"/><line x1="100" y1="0" x2="100" y2="270"/><line x1="150" y1="0" x2="150" y2="270"/><line x1="200" y1="0" x2="200" y2="270"/><line x1="250" y1="0" x2="250" y2="270"/><line x1="300" y1="0" x2="300" y2="270"/><line x1="0" y1="0" x2="330" y2="0"/><line x1="0" y1="50" x2="330" y2="50"/><line x1="0" y1="100" x2="330" y2="100"/><line x1="0" y1="150" x2="330" y2="150"/><line x1="0" y1="200" x2="330" y2="200"/><line x1="0" y1="250" x2="330" y2="250"/></g>
+<rect x="18.00" y="82.00" width="112.00" height="76.00" fill="#f6f1e6" stroke="#d8d2bf" stroke-width="0.5" stroke-dasharray="3 2"/>
+<text x="74.00" y="154.00" font-family="monospace" font-size="4.2" font-weight="700" text-anchor="middle" fill="#8a8375">RESTAURANT (above deck)</text>
+<rect x="10.00" y="10.00" width="155.00" height="78.00" fill="#faf6ee" stroke="#d8d2bf" stroke-width="0.5" stroke-dasharray="3 2"/>
+<text x="87.50" y="16.00" font-family="monospace" font-size="4.2" font-weight="700" text-anchor="middle" fill="#8a8375">POWER BANK keepout</text>
+<rect x="111.40" y="8.00" width="107.20" height="34.00" fill="#eef7f8" stroke="#1F8A9E" stroke-width="0.5" stroke-dasharray="3 2"/>
+<text x="165.00" y="12.00" font-family="monospace" font-size="4.2" font-weight="700" text-anchor="middle" fill="#1F8A9E">LCD FRAME glue footprint</text>
+<rect x="115.00" y="21.00" width="34.00" height="18.00" fill="#ffffff" stroke="#1F8A9E" stroke-width="0.7"/>
+<text x="132.00" y="32.00" font-family="monospace" font-size="3.6" font-weight="700" text-anchor="middle" fill="#1F8A9E">CABLE</text>
+<text x="132.00" y="36.50" font-family="monospace" font-size="3.6" font-weight="700" text-anchor="middle" fill="#1F8A9E">HOLE</text>
+<rect x="120.00" y="192.00" width="112.00" height="68.00" fill="none" stroke="#9A3DBF" stroke-width="0.4" stroke-dasharray="2 2"/>
+<rect x="125.20" y="199.40" width="101.50" height="53.30" fill="#f5eaf9" stroke="#9A3DBF" stroke-width="0.7"/>
+<text x="176.00" y="234.00" font-family="monospace" font-size="5.2" font-weight="700" text-anchor="middle" fill="#9A3DBF">ELEGOO MEGA 2560</text>
+<text x="176.00" y="204.00" font-family="monospace" font-size="3.8" font-weight="400" text-anchor="middle" fill="#9A3DBF">101.5 x 53.3 board</text>
+<text x="176.00" y="241.00" font-family="monospace" font-size="3.6" font-weight="400" text-anchor="middle" fill="#9A3DBF">orientation not fixed - measure it</text>
+<rect x="252.50" y="189.50" width="67.00" height="51.00" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="0.7"/>
+<rect x="255.00" y="195.50" width="60.00" height="39.00" fill="none" stroke="#3EC1C7" stroke-width="0.5" stroke-dasharray="2 1.5"/>
+<line x1="252.5" y1="238.5" x2="252.5" y2="191.5" stroke="#E3001B" stroke-width="1.4"/>
+<text x="286.00" y="211.00" font-family="monospace" font-size="7.5" font-weight="700" text-anchor="middle" fill="#1F8A9E">R1</text>
+<text x="286.00" y="218.00" font-family="monospace" font-size="4.0" font-weight="400" text-anchor="middle" fill="#5a5346">SPACE 1</text>
+<text x="286.00" y="225.00" font-family="monospace" font-size="4.4" font-weight="700" text-anchor="middle" fill="#142850">SS 44</text>
+<text x="286.00" y="237.50" font-family="monospace" font-size="3.4" font-weight="400" text-anchor="middle" fill="#8a8375">centre (286, 55)</text>
+<rect x="252.50" y="134.50" width="67.00" height="51.00" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="0.7"/>
+<rect x="255.00" y="140.50" width="60.00" height="39.00" fill="none" stroke="#3EC1C7" stroke-width="0.5" stroke-dasharray="2 1.5"/>
+<line x1="252.5" y1="183.5" x2="252.5" y2="136.5" stroke="#E3001B" stroke-width="1.4"/>
+<text x="286.00" y="156.00" font-family="monospace" font-size="7.5" font-weight="700" text-anchor="middle" fill="#1F8A9E">R2</text>
+<text x="286.00" y="163.00" font-family="monospace" font-size="4.0" font-weight="400" text-anchor="middle" fill="#5a5346">SPACE 2</text>
+<text x="286.00" y="170.00" font-family="monospace" font-size="4.4" font-weight="700" text-anchor="middle" fill="#142850">SS 45</text>
+<text x="286.00" y="182.50" font-family="monospace" font-size="3.4" font-weight="400" text-anchor="middle" fill="#8a8375">centre (286, 110)</text>
+<rect x="252.50" y="79.50" width="67.00" height="51.00" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="0.7"/>
+<rect x="255.00" y="85.50" width="60.00" height="39.00" fill="none" stroke="#3EC1C7" stroke-width="0.5" stroke-dasharray="2 1.5"/>
+<line x1="252.5" y1="128.5" x2="252.5" y2="81.5" stroke="#E3001B" stroke-width="1.4"/>
+<text x="286.00" y="101.00" font-family="monospace" font-size="7.5" font-weight="700" text-anchor="middle" fill="#1F8A9E">R3</text>
+<text x="286.00" y="108.00" font-family="monospace" font-size="4.0" font-weight="400" text-anchor="middle" fill="#5a5346">SPACE 3</text>
+<text x="286.00" y="115.00" font-family="monospace" font-size="4.4" font-weight="700" text-anchor="middle" fill="#142850">SS 40</text>
+<text x="286.00" y="127.50" font-family="monospace" font-size="3.4" font-weight="400" text-anchor="middle" fill="#8a8375">centre (286, 165)</text>
+<rect x="252.50" y="24.50" width="67.00" height="51.00" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="0.7"/>
+<rect x="255.00" y="30.50" width="60.00" height="39.00" fill="none" stroke="#3EC1C7" stroke-width="0.5" stroke-dasharray="2 1.5"/>
+<line x1="252.5" y1="73.5" x2="252.5" y2="26.5" stroke="#E3001B" stroke-width="1.4"/>
+<text x="286.00" y="46.00" font-family="monospace" font-size="7.5" font-weight="700" text-anchor="middle" fill="#1F8A9E">R4</text>
+<text x="286.00" y="53.00" font-family="monospace" font-size="4.0" font-weight="400" text-anchor="middle" fill="#5a5346">SPACE 4</text>
+<text x="286.00" y="60.00" font-family="monospace" font-size="4.4" font-weight="700" text-anchor="middle" fill="#142850">SS 41</text>
+<text x="286.00" y="72.50" font-family="monospace" font-size="3.4" font-weight="400" text-anchor="middle" fill="#8a8375">centre (286, 220)</text>
+<rect x="46.50" y="208.50" width="67.00" height="51.00" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="0.7"/>
+<rect x="51.00" y="214.50" width="60.00" height="39.00" fill="none" stroke="#3EC1C7" stroke-width="0.5" stroke-dasharray="2 1.5"/>
+<line x1="113.5" y1="257.5" x2="113.5" y2="210.5" stroke="#E3001B" stroke-width="1.4"/>
+<text x="80.00" y="230.00" font-family="monospace" font-size="7.5" font-weight="700" text-anchor="middle" fill="#1F8A9E">R5</text>
+<text x="80.00" y="237.00" font-family="monospace" font-size="4.0" font-weight="400" text-anchor="middle" fill="#5a5346">RECORD</text>
+<text x="80.00" y="244.00" font-family="monospace" font-size="4.4" font-weight="700" text-anchor="middle" fill="#142850">SS 36</text>
+<text x="80.00" y="256.50" font-family="monospace" font-size="3.4" font-weight="400" text-anchor="middle" fill="#8a8375">centre (80, 36)</text>
+<rect x="69.50" y="94.50" width="67.00" height="51.00" fill="#e8f7f8" stroke="#1F8A9E" stroke-width="0.7"/>
+<rect x="74.00" y="100.50" width="60.00" height="39.00" fill="none" stroke="#3EC1C7" stroke-width="0.5" stroke-dasharray="2 1.5"/>
+<line x1="136.5" y1="143.5" x2="136.5" y2="96.5" stroke="#E3001B" stroke-width="1.4"/>
+<text x="103.00" y="116.00" font-family="monospace" font-size="7.5" font-weight="700" text-anchor="middle" fill="#1F8A9E">R6</text>
+<text x="103.00" y="123.00" font-family="monospace" font-size="4.0" font-weight="400" text-anchor="middle" fill="#5a5346">DRIVE-THROUGH</text>
+<text x="103.00" y="130.00" font-family="monospace" font-size="4.4" font-weight="700" text-anchor="middle" fill="#142850">SS 37</text>
+<text x="103.00" y="142.50" font-family="monospace" font-size="3.4" font-weight="400" text-anchor="middle" fill="#8a8375">centre (103, 150)</text>
+<g fill="none" stroke="#142850" stroke-width="0.9" stroke-dasharray="4 2.5" stroke-linejoin="round">
+<path d="M 252.5,215.0 L 212.0,215.0"/>
+<path d="M 252.5,160.0 L 240.0,160.0 L 240.0,215.0 L 212.0,215.0"/>
+<path d="M 252.5,105.0 L 240.0,105.0 L 240.0,215.0 L 212.0,215.0"/>
+<path d="M 252.5,50.0 L 240.0,50.0 L 240.0,215.0 L 212.0,215.0"/>
+<path d="M 113.5,234.0 L 113.5,215.0 L 212.0,215.0"/>
+<path d="M 136.5,120.0 L 136.5,215.0 L 212.0,215.0"/>
+</g>
+<g fill="none" stroke="#1F8A9E" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round" opacity="0.85">
+<path d="M 212.0,215.0 L 252.5,215.0 L 252.5,215.0"/>
+<path d="M 252.5,215.0 L 252.5,160.0"/>
+<path d="M 252.5,160.0 L 252.5,105.0"/>
+<path d="M 252.5,105.0 L 252.5,50.0"/>
+<path d="M 212.0,215.0 L 212.0,120.0 L 136.5,120.0"/>
+<path d="M 136.5,120.0 L 136.5,234.0 L 113.5,234.0"/>
+</g>
+<rect x="202.2" y="211.5" width="28" height="7" rx="1.5" fill="#ffffff" opacity="0.92"/>
+<text x="204.25" y="217.40" font-family="monospace" font-size="4.6" font-weight="700" text-anchor="start" fill="#1F8A9E">B0 40mm</text>
+<rect x="255.5" y="184.0" width="28" height="7" rx="1.5" fill="#ffffff" opacity="0.92"/>
+<text x="257.50" y="189.90" font-family="monospace" font-size="4.6" font-weight="700" text-anchor="start" fill="#1F8A9E">B1 55mm</text>
+<rect x="255.5" y="129.0" width="28" height="7" rx="1.5" fill="#ffffff" opacity="0.92"/>
+<text x="257.50" y="134.90" font-family="monospace" font-size="4.6" font-weight="700" text-anchor="start" fill="#1F8A9E">B2 55mm</text>
+<rect x="255.5" y="74.0" width="28" height="7" rx="1.5" fill="#ffffff" opacity="0.92"/>
+<text x="257.50" y="79.90" font-family="monospace" font-size="4.6" font-weight="700" text-anchor="start" fill="#1F8A9E">B3 55mm</text>
+<rect x="158.2" y="164.0" width="28" height="7" rx="1.5" fill="#ffffff" opacity="0.92"/>
+<text x="160.25" y="169.90" font-family="monospace" font-size="4.6" font-weight="700" text-anchor="start" fill="#1F8A9E">B4 170mm</text>
+<rect x="109.0" y="173.5" width="28" height="7" rx="1.5" fill="#ffffff" opacity="0.92"/>
+<text x="111.00" y="179.40" font-family="monospace" font-size="4.6" font-weight="700" text-anchor="start" fill="#1F8A9E">B5 137mm</text>
+<circle cx="252.5" cy="215.0" r="1.8" fill="#E3001B"/>
+<circle cx="252.5" cy="160.0" r="1.8" fill="#E3001B"/>
+<circle cx="252.5" cy="105.0" r="1.8" fill="#E3001B"/>
+<circle cx="252.5" cy="50.0" r="1.8" fill="#E3001B"/>
+<circle cx="113.5" cy="234.0" r="1.8" fill="#E3001B"/>
+<circle cx="136.5" cy="120.0" r="1.8" fill="#E3001B"/>
+<circle cx="212.0" cy="215.0" r="2.4" fill="#9A3DBF"/>
+</g>
+<line x1="8.0" y1="308.0" x2="338.0" y2="308.0" stroke="#d8d2bf" stroke-width="0.5"/>
+<line x1="8.0" y1="312.4" x2="24.0" y2="312.4" stroke="#1F8A9E" stroke-width="2.6"/>
+<text x="28.0" y="314.0" font-family="monospace" font-size="4.6" fill="#5a5346">shared bus, 6 conductors: 3V3 / GND / SCK 52 / MOSI 51 / MISO 50 / RST A0</text>
+<line x1="8.0" y1="320.4" x2="24.0" y2="320.4" stroke="#142850" stroke-width="0.9" stroke-dasharray="4 2.5"/>
+<text x="28.0" y="322.0" font-family="monospace" font-size="4.6" fill="#5a5346">SS (chip select), one per reader, its own wire all the way to the Mega</text>
+<line x1="15.0" y1="325.0" x2="15.0" y2="332.0" stroke="#E3001B" stroke-width="1.8"/>
+<text x="28.0" y="330.0" font-family="monospace" font-size="4.6" fill="#5a5346">red bar = OPEN end of the U-channel. The board slides in here and the wires leave here.</text>
+<text x="8.0" y="338.0" font-family="monospace" font-size="4.2" fill="#8a8375">grid 10 mm, heavy line 50 mm. Purple dot = Mega header field, +/- 25 mm: measure the real board once it is mounted.</text>
+<text x="8.0" y="345.0" font-family="monospace" font-size="4.0" fill="#8a8375">AI-assisted (Claude, Anthropic). Verify every fit against a real RC522 before soldering.</text>
+</svg>
+  <p class="figcap"><strong>The red bar on each holder is the open end of the U-channel.</strong> The
+  RC522 slides in there and its wires leave from there &mdash; so that is the point every length below
+  is measured from. The four parking holders are fixed by the laser deck's engraved guides; the record
+  and drive-through holders are shown <strong>rotated 180&deg;</strong> so their open ends face the Mega,
+  which saves about 130&nbsp;mm on each of their runs. That is free, with one catch: <strong>slide those
+  two reader boards in before the Mega is bolted down</strong>, because the Mega sits right where your
+  hands need to be.</p>
+</div>
+
+<h2><span class="num">04</span> Cut list &mdash; shared bus</h2>
+<p class="sub">Route is the straight under-deck distance. Cut length adds the vertical drop, 15% for
+routing that isn't a perfect right angle, and a service loop so the deck can be lifted off without
+unsoldering anything.</p>
+
+<table class="cut">
+  <thead><tr><th>Run</th><th></th><th>Route</th><th>Cut each</th><th>Qty</th><th>Total</th></tr></thead>
+  <tbody>
+<tr><td class="mono">Mega &#8594; bus rail</td><td class="mono tiny">feed</td><td class="mono num">83</td><td class="mono num big">200</td><td class="mono num">&times;6</td><td class="mono num">1200</td></tr>
+<tr><td class="mono">bus rail &#8594; R1</td><td class="mono tiny">shared</td><td class="mono num">88</td><td class="mono num big">150</td><td class="mono num">&times;6</td><td class="mono num">900</td></tr>
+<tr><td class="mono">bus rail &#8594; R2</td><td class="mono tiny">shared</td><td class="mono num">32</td><td class="mono num big">100</td><td class="mono num">&times;6</td><td class="mono num">600</td></tr>
+<tr><td class="mono">bus rail &#8594; R3</td><td class="mono tiny">shared</td><td class="mono num">68</td><td class="mono num big">125</td><td class="mono num">&times;6</td><td class="mono num">750</td></tr>
+<tr><td class="mono">bus rail &#8594; R4</td><td class="mono tiny">shared</td><td class="mono num">122</td><td class="mono num big">200</td><td class="mono num">&times;6</td><td class="mono num">1200</td></tr>
+<tr><td class="mono">bus rail &#8594; R5</td><td class="mono tiny">shared</td><td class="mono num">200</td><td class="mono num big">275</td><td class="mono num">&times;6</td><td class="mono num">1650</td></tr>
+<tr><td class="mono">bus rail &#8594; R6</td><td class="mono tiny">shared</td><td class="mono num">124</td><td class="mono num big">200</td><td class="mono num">&times;6</td><td class="mono num">1200</td></tr>
+  </tbody>
+  <tfoot><tr><td colspan="5">Shared bus, all six readers</td><td class="mono num">7500&nbsp;mm</td></tr></tfoot>
+</table>
+<p class="tiny">Every length in millimetres. The highlighted row is the only run that goes all the way back
+to the Mega &mdash; everything else is a short hop from the rail.</p>
+
+<h2><span class="num">05</span> Cut list &mdash; chip select</h2>
+<p class="sub">One wire per reader, no junction, straight to its own Mega pin.</p>
+
+<table class="cut">
+  <thead><tr><th>Run</th><th></th><th>Route</th><th>Cut each</th><th>Qty</th><th>Total</th></tr></thead>
+  <tbody>
+<tr><td class="mono">R1 &#8594; Mega pin 44</td><td class="mono tiny">SS</td><td class="mono num">40</td><td class="mono num big">150</td><td class="mono num">&times;1</td><td class="mono num">150</td></tr>
+<tr><td class="mono">R2 &#8594; Mega pin 45</td><td class="mono tiny">SS</td><td class="mono num">96</td><td class="mono num big">200</td><td class="mono num">&times;1</td><td class="mono num">200</td></tr>
+<tr><td class="mono">R3 &#8594; Mega pin 40</td><td class="mono tiny">SS</td><td class="mono num">150</td><td class="mono num big">275</td><td class="mono num">&times;1</td><td class="mono num">275</td></tr>
+<tr><td class="mono">R4 &#8594; Mega pin 41</td><td class="mono tiny">SS</td><td class="mono num">206</td><td class="mono num big">325</td><td class="mono num">&times;1</td><td class="mono num">325</td></tr>
+<tr><td class="mono">R5 &#8594; Mega pin 36</td><td class="mono tiny">SS</td><td class="mono num">118</td><td class="mono num big">225</td><td class="mono num">&times;1</td><td class="mono num">225</td></tr>
+<tr><td class="mono">R6 &#8594; Mega pin 37</td><td class="mono tiny">SS</td><td class="mono num">170</td><td class="mono num big">300</td><td class="mono num">&times;1</td><td class="mono num">300</td></tr>
+  </tbody>
+  <tfoot><tr><td colspan="5">Chip select, all six</td><td class="mono num">1475&nbsp;mm</td></tr></tfoot>
+</table>
+
+<div class="notes finals-notes">
+  <p><strong>The LCD is the one cable that will not reach on a stock jumper.</strong> The screen sits
+  rear-centre, its cable drops through the deck hole at (132,&nbsp;240), and the Mega is near the front.
+  Allowing 60&nbsp;mm inside the frame itself, that run wants about <strong>475&nbsp;mm &times; 4
+  wires</strong> (5&nbsp;V, GND, SDA&nbsp;20, SCL&nbsp;21). Stock backpack cables are 200&nbsp;mm and a
+  long Dupont jumper is 300&nbsp;mm &mdash; neither makes it. Cut this one from spool, or plan on a joint.
+  <strong>Mega I2C is pins 20/21, not A4/A5.</strong></p>
+</div>
+
+<h2><span class="num">06</span> How much wire to buy</h2>
+
+<div class="cols">
+  <div class="card">
+    <p class="keynum">10.9 m</p>
+    <p class="keylab">all six readers + LCD, bus-rail plan. Buy <strong>15&nbsp;m</strong> and you have
+    margin for mistakes.</p>
+  </div>
+  <div class="card tinted">
+    <p class="keynum">7.5 m</p>
+    <p class="keylab">four parking readers + LCD only &mdash; which is what
+    <code>firmware/tasklot_full</code> actually runs today. See the power note below.</p>
+  </div>
+</div>
+
+<p style="margin-top:20px"><strong>26&nbsp;AWG stranded silicone</strong> is the right wire. Six readers
+draw 78&ndash;156&nbsp;mA total, so 26&nbsp;AWG is nowhere near its limit &mdash; the reason to pick it is
+that it bends without work-hardening every time the deck comes off. Solid core will snap at the solder
+joint after a handful of open-and-shut cycles, and this thing is going to be opened a lot before Monday.
+Ribbon cable is the fast alternative: peel six conductors off a 40-way rainbow and the colour code is done for you.</p>
+
+<h2><span class="num">07</span> If you'd rather daisy-chain</h2>
+<p class="sub">Same electrical circuit, less wire, more solder joints.</p>
+
+<p>Instead of branching from a rail, hop the six shared conductors from reader to reader up the parking
+column. The four parking readers are 55&nbsp;mm apart, so those hops are tiny.</p>
+
+<table class="cut">
+  <thead><tr><th>Segment</th><th>Cut each</th><th>Qty</th><th>Total</th></tr></thead>
+  <tbody>
+<tr><td class="mono">Mega &#8594; R1</td><td class="mono num big">150</td><td class="mono num">&times;6</td><td class="mono num">900</td></tr>
+<tr><td class="mono">R1 &#8594; R2</td><td class="mono num big">125</td><td class="mono num">&times;6</td><td class="mono num">750</td></tr>
+<tr><td class="mono">R2 &#8594; R3</td><td class="mono num big">125</td><td class="mono num">&times;6</td><td class="mono num">750</td></tr>
+<tr><td class="mono">R3 &#8594; R4</td><td class="mono num big">125</td><td class="mono num">&times;6</td><td class="mono num">750</td></tr>
+<tr><td class="mono">Mega &#8594; R6</td><td class="mono num big">300</td><td class="mono num">&times;6</td><td class="mono num">1800</td></tr>
+<tr><td class="mono">R6 &#8594; R5</td><td class="mono num big">200</td><td class="mono num">&times;6</td><td class="mono num">1200</td></tr>
+  </tbody>
+  <tfoot><tr><td colspan="3">Shared bus, daisy-chained</td><td class="mono num">6150&nbsp;mm</td></tr></tfoot>
+</table>
+
+<p style="margin-top:16px">That saves roughly <strong>1.4&nbsp;m</strong> of wire and costs you this: each
+middle reader now has <strong>two</strong> wires on every shared pad instead of one &mdash; 13 joints on a
+board the size of a credit card &mdash; and one cold joint takes out every reader downstream of it rather
+than just its own. <strong>One day before the review, take the rail.</strong> You can pull a single reader
+off a rail to test it; you cannot do that to a chain.</p>
+
+<h2><span class="num">08</span> The power question, honestly</h2>
+
+<p>Each RC522 draws 13&ndash;26&nbsp;mA. Six of them is <strong>78&ndash;156&nbsp;mA</strong>, and the
+Mega's 3.3&nbsp;V rail comes off a small regulator that is not rated for that with confidence. Four
+readers (52&ndash;104&nbsp;mA) is the configuration that has actually been bench-tested and read through
+plywood.</p>
+
+<ul class="tight">
+  <li><strong>Wire the rail for six, populate four.</strong> Cut and place all six branches, leave the
+  record and drive-through ends unterminated. Adding them later is then a two-minute job, not a rebuild.</li>
+  <li><strong>If you want all six live:</strong> add an AMS1117-3.3 module fed from the Mega's 5&nbsp;V
+  rail, tie its ground to the Mega's ground, and take the bus 3V3 from the module instead of the Mega pin.
+  Every other wire stays exactly as drawn.</li>
+  <li><strong>Put a 10&ndash;47&nbsp;&micro;F capacitor across 3V3 and GND at the far end of the rail.</strong>
+  A metre of thin wire feeding six RF front ends benefits from it, and it costs nothing.</li>
+  <li><strong>The symptom to know:</strong> a reader that answers <code>VersionReg</code> correctly but
+  never sees a tag is a starved 3.3&nbsp;V rail, not a broken bus.
+  <code>firmware/six_reader_check</code> is the sketch that tells you which one you have.</li>
+</ul>
+
+<h2><span class="num">09</span> One thing to settle before the walls get cut</h2>
+<p class="sub">Two files in the repo disagree about where the Mega goes, and only one of them ends up in plywood. It does <em>not</em> hold up the deck.</p>
+
+<p>The printed CAD puts the Mega at <code>mega_keepout_origin&nbsp;=&nbsp;[120,&nbsp;10]</code>, so it
+occupies <strong>X&nbsp;120&ndash;232</strong>. The laser front wall &mdash; <code>uls_walls_sheet()</code>,
+which is the <strong>walls sheet</strong> &mdash; has its 62&nbsp;&times;&nbsp;24&nbsp;mm
+<em>&ldquo;Mega USB/power service opening&rdquo;</em> at <strong>X&nbsp;250&ndash;312</strong>. Those don't
+overlap &mdash; an 18&nbsp;mm gap at best, and more like 130&nbsp;mm if the USB faces sideways.
+<strong>The Mega as placed cannot reach the hole cut for it.</strong></p>
+
+<p><strong>It blocks nothing on the deck.</strong> <code>TASKLOT-deck-sheet.pdf</code> is deck-only and never
+calls <code>front_wall()</code>, so the deck sheet can be cut without this being answered. It only has to be
+settled before the walls run.</p>
+
+<p>The hole is the half that gets lasered, so it is the half that can't move afterwards. If the Mega is
+repositioned to actually use it &mdash; roughly X&nbsp;254&ndash;307, long axis front-to-back &mdash; it
+tucks under R1's holder with about 2.6&nbsp;mm to spare. That figure assumes <strong>nothing hangs below
+the holder</strong>, which is true only if you follow section&nbsp;01 and solder the reader wires flat. Fit
+a downward pin header and a Dupont plug instead and the lowest point drops to about
+<strong>Z&nbsp;24.6</strong>, inside the opening's own 5&ndash;29&nbsp;mm band and in the way of anything
+reaching through it. The two decisions are the same decision.</p>
+
+<p><strong>What that does to these lengths:</strong></p>
+
+<table class="cut">
+  <thead><tr><th>Run</th><th>As drawn</th><th>If the Mega moves to the opening</th><th>Change</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">R1, R2, R4 chip select</td><td class="mono num">150 / 200 / 325</td><td class="mono num">150 / 200 / 325</td><td class="mono tiny">no change</td></tr>
+    <tr><td class="mono">R3 chip select</td><td class="mono num">275</td><td class="mono num">250</td><td class="mono tiny">25 shorter</td></tr>
+    <tr class="hl"><td class="mono">R5 record, chip select</td><td class="mono num">225</td><td class="mono num big">325</td><td class="mono tiny">100 longer</td></tr>
+    <tr class="hl"><td class="mono">R6 drive-through, chip select</td><td class="mono num">300</td><td class="mono num big">375</td><td class="mono tiny">75 longer</td></tr>
+    <tr class="hl"><td class="mono">LCD, &times;4</td><td class="mono num">475</td><td class="mono num big">550</td><td class="mono tiny">75 longer</td></tr>
+    <tr><td class="mono">Mega &rarr; bus rail, &times;6</td><td class="mono num">200</td><td class="mono num">225</td><td class="mono tiny">25 longer</td></tr>
+  </tbody>
+</table>
+
+<p style="margin-top:16px"><strong>Don't wait for the answer.</strong> Cut the three highlighted runs at
+the longer figure &mdash; R5 at 325, R6 at 375, the LCD at 550 &mdash; and coil the slack under the deck.
+That costs about 0.9&nbsp;m of wire and makes the whole question stop mattering to you. Everything else on
+this page is unaffected either way.</p>
+
+<h2><span class="num">10</span> Files</h2>
+
+<ul class="tight">
+  <li><code>build/wiring/deck-wiring-plan-1to1.svg</code> &mdash; the plan above as a standalone file.
+  Print at 100%, no scaling. It tiles across four sheets of Letter, or prints on one 11&nbsp;&times;&nbsp;17.
+  <strong>Mirror it in X</strong> if you're laying it against the flipped-over deck.</li>
+  <li><code>build/cad/exports/tasklot-reader-holder-glue.stl</code> &mdash; print this before anything else and
+  check a wired RC522 seats.</li>
+  <li><code>tasklot-2-reader-holders-6up-RED.stl</code> &mdash; all six holders, 213&nbsp;&times;&nbsp;108&nbsp;mm
+  plate, ~3&nbsp;h, no supports. It is <strong>six separate parts on one plate on purpose</strong>; the
+  slicer will warn about disconnected geometry, and it is wrong.</li>
+  <li><code>build/laser/exports/sheet_1_underside_score.svg</code> &mdash; the deck's engraved holder
+  guides, which is what fixes the reader positions the lengths are measured from.</li>
+  <li><code>firmware/six_reader_check</code> &mdash; upload it once the bus is soldered. It reports every
+  reader's <code>VersionReg</code>, which is how you find a bad joint without a multimeter.</li>
+</ul>
+
+<div class="footer">
+  <p class="mono" style="color:var(--purple);font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin:0 0 10px">Disclosure</p>
+  <p style="margin:0">This page, the diagrams and the length calculations were produced with
+  <strong>Claude (Anthropic)</strong> working from the TaskLot repo's own CAD parameters, laser export
+  and firmware. The reader positions, slot dimensions and pin assignments are read from those files;
+  the Mega's position on the deck and the RC522 header height are <strong>not yet measured</strong> and
+  are the two numbers most worth checking against the real hardware before you cut.</p>
+</div>
+
+</div>
+
+<p class="credit">site by ella jacobs</p>
+
+</body>
+</html>
