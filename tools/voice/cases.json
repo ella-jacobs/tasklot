@@ -1,5 +1,5 @@
 {
-  "_comment": "Shared fixtures. condense.js and condense.py are BOTH checked against this file, so the browser and the CLI can never quietly disagree about what a memo means. Add a case whenever a real memo comes out wrong. Run: node test_condense.js && python3 test_condense.py",
+  "_comment": "Shared fixtures. condense.js and condense.py are BOTH checked against this file, so the browser and the CLI can never quietly disagree about what a memo means. Add a case whenever a real memo comes out wrong. Run: make test (tests/test_condenser.py and tests/condense.test.js)",
   "width": 18,
   "cases": [
     { "in": "Um okay so I really need to email the professor about whether we still need the poster by Friday",

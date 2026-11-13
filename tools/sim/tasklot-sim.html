@@ -1,4 +1,13 @@
 <!doctype html>
+<!--
+  tasklot-sim.html - the TaskLot parking lot in a browser, with no hardware.
+
+  Drag cars onto the four spaces, the speaker and the pickup lane; the page runs the
+  board's rules, draws the 20 x 4 LCD, and condenses typed or dictated tasks with an
+  inlined copy of tools/voice/condense.js (regenerate it with tools/voice/sync_page.py).
+  Over Web Serial (Chrome or Edge) it can also drive a real board. Open the file
+  directly; nothing to install. See tools/sim/README.md.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -268,7 +277,7 @@
     <strong>This is a rehearsal rig, and a backup.</strong> If a reader goes quiet five minutes
     before the review, this page demonstrates the whole interaction on a laptop — the same
     condensing code, the same screen layout, the same serial vocabulary as
-    <code>firmware/tasklot_full</code>. What it can't prove is that the RC522s read through the
+    <code>firmware/history/tasklot_full</code>. What it can't prove is that the RC522s read through the
     deck. That still has to happen on the bench.
   </div>
 
@@ -276,7 +285,7 @@
 
 <p class="credit">TaskLot · Ella Jacobs · built with Claude (Anthropic) as a coding assistant</p>
 
-<!-- The condenser. GENERATED from tasklot/tools/voice/condense.js — do not edit it here.
+<!-- The condenser. GENERATED from tools/voice/condense.js — do not edit it here.
      Re-inline after editing the source:  python3 tools/voice/sync_page.py  -->
 <script>
 /* ===== BEGIN condense.js ===== */
@@ -526,7 +535,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // The Condenser.
+  // Condenser stages (private helpers).
   // ---------------------------------------------------------------------------
 
   /** Remove disfluencies, looping because the anchored rule fires once a pass. */
@@ -693,7 +702,7 @@
 //   TASK n <text>
 //   the 20-char lot block
 //
-// Mirrors firmware/tasklot_full/tasklot_full.ino. If you change the wording
+// Mirrors firmware/history/tasklot_full/tasklot_full.ino. If you change the wording
 // there, change it here — the whole point is that they match.
 // ===========================================================================
 
@@ -702,7 +711,7 @@ const CD = window.TaskLotCondense;
 // ===========================================================================
 // THE BRIDGE — drive the REAL LCD from this page.
 //
-// firmware/lcd_bridge runs the LCD half of tasklot_full and takes the events a
+// firmware/history/lcd_bridge runs the LCD half of tasklot_full and takes the events a
 // reader would have produced as serial commands. So every drag on this deck can
 // move the physical screen, with no RC522 wired to anything.
 //
@@ -1007,7 +1016,7 @@ let ordering = null;          // which car is ORDERING at the speaker, or null
 let playing  = null;          // which car is being READ BACK at the speaker, or null
 
 // --------------------------------------------------------------------------
-// THE SCREEN OVERLAYS — mirrors firmware/lcd_bridge exactly, including the flash.
+// THE SCREEN OVERLAYS — mirrors firmware/history/lcd_bridge exactly, including the flash.
 //
 //   ORDER IN PROGRESS   flashes slowly while you are talking at the speaker
 //   ORDER IS IN         flashes fast for a beat after you park, THEN the list
@@ -1256,11 +1265,6 @@ function setTask(n, t) {
   render();
 }
 
-// PLAYBACK IS CUT — decided 8/25. The drive-through used to read the task back;
-// now the same restaurant is THE SPEAKER, where you place the order instead. One
-// less step, one less thing to go wrong in front of a room, and it is what makes
-// parking the stop gesture. speak() is gone with it.
-//
 // ---------------------------------------------------------------------------
 // rendering the deck
 // ---------------------------------------------------------------------------

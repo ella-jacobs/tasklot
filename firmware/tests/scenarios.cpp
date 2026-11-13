@@ -10,7 +10,7 @@
 //   - the four LCD rows after every step.
 //
 // The transcripts in golden/ were produced by the monolithic sketch before the
-// refactor (see regen_golden.sh). run_tests.sh builds this file against the current
+// refactor (see `run_tests.sh --regen`). run_tests.sh builds this file against the current
 // sketch and diffs its output against them, so any change in wire format or screen
 // behaviour shows up as a diff.
 //

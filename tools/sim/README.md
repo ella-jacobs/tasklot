@@ -2,8 +2,11 @@
 
 `tasklot-sim.html` is a single self-contained page that simulates the parking lot:
 drag cars onto the four spaces, the speaker, and the pickup lane, and watch the LCD panel
-update. It runs the same rules as `firmware/tasklot_full_v2` and prints the same serial
-lines, and its task text comes from an inlined copy of `tools/voice/condense.js`.
+update. It follows the board's interaction rules (order at the speaker, park to finish,
+read back, collect at the pickup lane), and its task text comes from an inlined copy of
+`tools/voice/condense.js`. Its serial log uses the event lines of
+`firmware/history/tasklot_full`; the differences from the v2 protocol are listed in
+`DESIGN.md` (section 3 and edge case E-30).
 
 Open it in Chrome or Edge:
 
@@ -24,7 +27,7 @@ The inlined condenser is regenerated from `tools/voice/condense.js` with:
 python3 tools/voice/sync_page.py
 ```
 
-`tools/voice/test_condense.py` fails if the inlined copy is stale.
+`tools/voice/tests/test_condenser.py` fails if the inlined copy is stale, so `make test` catches it.
 
 What the simulator cannot prove: that the RC522s read through the deck, that six readers
 hold up on the shared SPI bus and the 3.3 V rail, or that the LCD contrast is set. Those

@@ -244,7 +244,7 @@
   }
 
   // ---------------------------------------------------------------------------
-  // The Condenser.
+  // Condenser stages (private helpers).
   // ---------------------------------------------------------------------------
 
   /** Remove disfluencies, looping because the anchored rule fires once a pass. */

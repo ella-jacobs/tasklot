@@ -568,8 +568,8 @@
       <li><strong>R5</strong> record &rarr; SS <strong>36</strong></li>
       <li><strong>R6</strong> drive-through &rarr; SS <strong>37</strong></li>
     </ul>
-    <p class="tiny" style="margin:12px 0 0">Pins 44/45/40/41 are what <code>firmware/tasklot_full</code>
-    already declares. 36 and 37 come from <code>firmware/six_reader_check</code>. Don't renumber them.</p>
+    <p class="tiny" style="margin:12px 0 0">Pins 44/45/40/41 are what <code>firmware/history/tasklot_full</code>
+    already declares. 36 and 37 come from <code>firmware/history/six_reader_check</code>. Don't renumber them.</p>
   </div>
 </div>
 
@@ -755,7 +755,7 @@ to the Mega &mdash; everything else is a short hop from the rail.</p>
   <div class="card tinted">
     <p class="keynum">7.5 m</p>
     <p class="keylab">four parking readers + LCD only &mdash; which is what
-    <code>firmware/tasklot_full</code> actually runs today. See the power note below.</p>
+    <code>firmware/history/tasklot_full</code> actually runs today. See the power note below.</p>
   </div>
 </div>
 
@@ -807,7 +807,7 @@ plywood.</p>
   A metre of thin wire feeding six RF front ends benefits from it, and it costs nothing.</li>
   <li><strong>The symptom to know:</strong> a reader that answers <code>VersionReg</code> correctly but
   never sees a tag is a starved 3.3&nbsp;V rail, not a broken bus.
-  <code>firmware/six_reader_check</code> is the sketch that tells you which one you have.</li>
+  <code>firmware/history/six_reader_check</code> is the sketch that tells you which one you have.</li>
 </ul>
 
 <h2><span class="num">09</span> One thing to settle before the walls get cut</h2>
@@ -859,12 +859,12 @@ this page is unaffected either way.</p>
   <strong>Mirror it in X</strong> if you're laying it against the flipped-over deck.</li>
   <li><code>build/cad/exports/tasklot-reader-holder-glue.stl</code> &mdash; print this before anything else and
   check a wired RC522 seats.</li>
-  <li><code>tasklot-2-reader-holders-6up-RED.stl</code> &mdash; all six holders, 213&nbsp;&times;&nbsp;108&nbsp;mm
+  <li><code>build/cad/exports/tasklot-reader-holders-6up.stl</code> &mdash; all six holders, 213&nbsp;&times;&nbsp;108&nbsp;mm
   plate, ~3&nbsp;h, no supports. It is <strong>six separate parts on one plate on purpose</strong>; the
   slicer will warn about disconnected geometry, and it is wrong.</li>
   <li><code>build/laser/exports/sheet_1_underside_score.svg</code> &mdash; the deck's engraved holder
   guides, which is what fixes the reader positions the lengths are measured from.</li>
-  <li><code>firmware/six_reader_check</code> &mdash; upload it once the bus is soldered. It reports every
+  <li><code>firmware/history/six_reader_check</code> &mdash; upload it once the bus is soldered. It reports every
   reader's <code>VersionReg</code>, which is how you find a bad joint without a multimeter.</li>
 </ul>
 
