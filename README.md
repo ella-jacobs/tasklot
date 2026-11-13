@@ -8,9 +8,8 @@ where you park it is its priority.
 ![The TaskLot browser simulator: three cars parked in spaces 1 to 3, the 20 x 4 LCD showing their labels in priority order, and the serial log](docs/images/simulator.png)
 
 <sub>The browser simulator (`tools/sim/`), captured in headless Chrome after its demo
-button loaded three spoken-style tasks and cars 2, 1 and 3 were parked in spaces 1 to 3.
-The labels are what the condenser made of the memos; the right column is the LCD and the
-serial log.</sub>
+button condensed three example memos onto cars 1 to 3 and cars 2, 1 and 3 were parked in
+spaces 1 to 3. The right column is the simulated LCD and the serial log.</sub>
 
 <!-- TODO(Ella): add a photo or short GIF of the real build in use -->
 
@@ -81,9 +80,10 @@ thousands of inputs to keep them identical.
 The full design, the serial protocol, and the 43 edge cases the tests are built around
 are in [`DESIGN.md`](DESIGN.md).
 
-> **Status.** The firmware refactor compiles and passes the host tests byte for byte
-> against transcripts recorded from the bench-tested sketch, but it has not been re-run on
-> hardware yet. [`firmware/README.md`](firmware/README.md) has the manual checklist.
+> **Status.** The refactored firmware compiles and reproduces transcripts recorded from
+> the bench-tested sketch byte for byte (apart from one deliberate screen fix), but it has
+> not been re-run on hardware yet. [`firmware/README.md`](firmware/README.md) has the
+> manual checklist.
 
 ## Quick start (no hardware)
 
