@@ -5,7 +5,12 @@ where you park it is its priority.
 
 <!-- TODO(Ella): one or two sentences on why you built this -->
 
-![CAD render of the TaskLot deck, LCD frame and drive-through](docs/images/cad-assembly-iso.png)
+![The TaskLot browser simulator: three cars parked in spaces 1 to 3, the 20 x 4 LCD showing their labels in priority order, and the serial log](docs/images/simulator.png)
+
+<sub>The browser simulator (`tools/sim/`), captured in headless Chrome after its demo
+button loaded three spoken-style tasks and cars 2, 1 and 3 were parked in spaces 1 to 3.
+The labels are what the condenser made of the memos; the right column is the LCD and the
+serial log.</sub>
 
 <!-- TODO(Ella): add a photo or short GIF of the real build in use -->
 
@@ -13,14 +18,21 @@ where you park it is its priority.
 
 1. **Order.** Drive a blank car past the speaker reader and say the task. The laptop
    records it.
-2. **Park.** Put the car in one of four spaces. Parking ends the recording. The laptop
-   transcribes it locally with whisper.cpp, shortens it to 18 characters, and sends it to
-   the board. The LCD shows the four spaces top to bottom, so space 1 is the top priority.
-3. **Reorder** by moving cars between spaces.
-4. **Read back** a task by driving its car past the speaker again: the LCD shows the full
-   text.
+2. **Park.** Put the car in one of four spaces. Parking ends the recording: there is no
+   stop button. The laptop transcribes the audio locally with whisper.cpp, shortens it to
+   18 characters, and sends it to the board.
+3. **Reorder** by moving cars between spaces. The LCD lists the spaces top to bottom, so
+   space 1 is the top priority.
+4. **Read back** a task by driving its car past the speaker again: the LCD pages through
+   the full text.
 5. **Finish** a task by driving the car through the pickup lane. The label is cleared and
    the car is ready for a new task.
+
+![The LCD at each step: ORDER IN PROGRESS, ORDER IS IN, the lot with the new label on line 1, YOUR ORDER with the full text, and ALL DONE!!](docs/images/lcd-frames.svg)
+
+<sub>Every frame is the firmware's own output: [`docs/make_lcd_frames.py`](docs/make_lcd_frames.py)
+draws them from the transcripts in `firmware/tests/golden/`, which the host tests replay
+the sketch against.</sub>
 
 ```
  RFID sticker on each car
@@ -35,94 +47,160 @@ where you park it is its priority.
 
 The sticker stores nothing; it is a key. The board maps each sticker to a car number and
 each car to its label, and the laptop holds the full text. The board never handles audio.
+One order, on the wire:
 
-The full design, the serial protocol, and the edge cases are in [`DESIGN.md`](DESIGN.md).
+```mermaid
+sequenceDiagram
+    participant Car as Toy car
+    participant Board as Arduino Mega
+    participant Ears as Laptop (Ears daemon)
+    Car->>Board: blank car passes the speaker reader
+    Board->>Ears: SPEAKER  CAR 3 ordering
+    Note over Ears: ffmpeg starts recording the mic
+    Car->>Board: car comes to rest on space 2
+    Board->>Ears: SPACE 2  <- CAR 3 parked
+    Note over Ears: whisper.cpp, then the rule-based Condenser
+    Ears->>Board: CAR 3 Email the Prof
+    Board->>Ears: TASK 3 Email the Prof
+    Note over Ears: optional LLM label, kept only if it passes the guards
+```
 
-## What is in the repo
+**Firmware.** The sketch is split into small C++ classes, one per piece of real board
+state: `RfidSlot` (one reader), `CarRegistry` (sticker to car to label, optional EEPROM),
+`ParkingLot`, `LaneDebouncer`, `ReadbackText`, `LcdView` (the only code that draws, never
+blocking) and `SerialProtocol` (the exact wire format), coordinated by `TaskLot`. The
+hardware-free logic builds on a laptop, so it is unit-tested there.
 
-| Path | What |
-|---|---|
-| `firmware/tasklot_full_v2/` | Arduino Mega sketch: six readers, presence detection, the LCD, and the serial command set. |
-| `firmware/history/` | The earlier sketches that built up to v2, with a README explaining each step. |
-| `tools/voice/` | The laptop side: the `tasklot` Python package (the `Ears` daemon, `Recorder`, `Transcriber`, `Condenser`, `Labeler`, `SerialLink`, `Lot`), `condense.js` for the browser, the original `tasklot_ears.py` / `tasklot_voice.py` commands, and tests. See [`tools/voice/README.md`](tools/voice/README.md). |
-| `tools/sim/` | A browser simulator of the whole lot. It can also drive a real board over Web Serial. |
-| `build/cad/` | Parametric OpenSCAD for the 3D-printed parts, STL exports, and a pre-print audit script. |
-| `build/laser/` | Parametric OpenSCAD for the laser-cut plywood deck and walls, and the run-file generator. |
-| `build/wiring/` | Wire-length calculations and a 1:1 under-deck wiring plan. |
+**Laptop.** The `tasklot` Python package wires a `Recorder` (ffmpeg), a `Transcriber`
+(whisper.cpp), a `TranscriptCleaner`, the `Condenser` and an optional guarded LLM
+`Labeler` behind a paced, reconnecting `SerialLink`. `Lot` keeps a per-car order id, so a
+car collected while its label is still being computed is never re-labelled. The same
+`Condenser` exists in JavaScript for the simulator, and a cross-language test feeds both
+thousands of inputs to keep them identical.
 
-## Setup
+The full design, the serial protocol, and the 43 edge cases the tests are built around
+are in [`DESIGN.md`](DESIGN.md).
 
-**Board.** Arduino Mega 2560 with the
-[MFRC522](https://github.com/miguelbalboa/rfid) (v1.4.12) and LiquidCrystal I2C
-(v1.1.2, Frank de Brabander) libraries. Pin map and wiring are in the header of
-`firmware/tasklot_full_v2/tasklot_full_v2.ino` and in `DESIGN.md`.
+> **Status.** The firmware refactor compiles and passes the host tests byte for byte
+> against transcripts recorded from the bench-tested sketch, but it has not been re-run on
+> hardware yet. [`firmware/README.md`](firmware/README.md) has the manual checklist.
+
+## Quick start (no hardware)
+
+Needs `python3` (3.9 or later), `node`, and a C++17 compiler (on macOS, the Xcode command
+line tools). Nothing to install.
 
 ```bash
+git clone https://github.com/ella-jacobs/tasklot.git
+cd tasklot
+make test                                            # every automated check, about 15 s
+python3 tools/voice/tasklot_voice.py --text "remind me to charge the battery pack tonight" --car 1
+open tools/sim/tasklot-sim.html                      # the simulator (macOS; elsewhere open the file in a browser)
+```
+
+The second command runs the offline half of the voice pipeline on typed text and prints
+what the LCD would show (it also saves the task to `tools/voice/tasks.json`):
+
+```
+  CAR 1
+  full : Charge the battery pack
+  lcd  : Charge battry pack  (18/18)
+  due  : tonight
+
+   +--------------------+
+   |1>Charge battry pack|
+   |2>-                 |
+   |3>-                 |
+   |4>-                 |
+   +--------------------+
+```
+
+`python3 tools/voice/condense.py "<memo>"` prints the condenser's full result as JSON.
+
+## Running it with the hardware
+
+**Board.** Arduino Mega 2560, six RC522 readers and a 20 x 4 I2C LCD. The pin map and
+wiring are in [`firmware/README.md`](firmware/README.md).
+
+```bash
+arduino-cli core install arduino:avr
+arduino-cli lib install "MFRC522@1.4.12" "LiquidCrystal I2C@1.1.2"
 arduino-cli compile --fqbn arduino:avr:mega:cpu=atmega2560 firmware/tasklot_full_v2
 arduino-cli upload  --fqbn arduino:avr:mega:cpu=atmega2560 -p <port> firmware/tasklot_full_v2
 ```
 
-**Laptop (macOS).** Python 3.9 or later, `pyserial`, `ffmpeg`, and whisper.cpp
-(`whisper-cli`) with an English model. The package itself uses only the standard library.
+**Laptop (macOS).** `pyserial`, `ffmpeg`, and whisper.cpp with an English model:
 
 ```bash
-python3 -m pip install pyserial
+python3 -m pip install -r tools/voice/requirements.txt
 brew install ffmpeg whisper-cpp
+mkdir -p ~/.whisper-models
+curl -L -o ~/.whisper-models/ggml-base.en.bin \
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
 TASKLOT_PORT=/dev/cu.usbmodem101 python3 tools/voice/tasklot_ears.py
 ```
 
-Optional settings: `TASKLOT_WHISPER_MODEL` (model path), `TASKLOT_LLM=0` (turn off the
-LLM label upgrade, which calls the `claude` CLI), `TASKLOT_LLM_TIMEOUT`. Every setting is
-listed in [`tools/voice/tasklot/config.py`](tools/voice/tasklot/config.py).
+Only one program can hold the serial port, so close the Arduino Serial Monitor and the
+simulator first. `TASKLOT_LLM=0` turns off the optional LLM label upgrade (it calls the
+`claude` CLI); every setting is listed in
+[`tools/voice/tasklot/config.py`](tools/voice/tasklot/config.py).
 
-**Simulator.** Open `tools/sim/tasklot-sim.html` in Chrome or Edge. No install.
+**Simulator.** `tools/sim/tasklot-sim.html` can also attach to a real board over Web
+Serial (Chrome or Edge).
 
 ## Tests
 
 ```bash
-make test
+make test        # firmware host tests, Python unittest, node --test
+make firmware    # compile every sketch for the Mega 2560 (needs arduino-cli and the two libraries)
 ```
 
-This needs only `python3`, `node` and a C++17 compiler (on macOS, the Xcode command line
-tools). It runs:
+`make test` runs:
 
-- the firmware host tests: the real sketch built on the laptop against fakes of the
-  Arduino libraries, with unit tests per class and 14 whole-sketch scenarios compared
-  byte for byte with recorded transcripts (see the Firmware section below);
-- the voice pipeline's unit tests (`python3 -m unittest`, about 150 tests covering every
-  edge case in `DESIGN.md` section 5 that can be checked on a laptop);
-- the `node --test` suite for `condense.js`, a cross-language test that requires the
-  Python and JavaScript condensers to agree on thousands of inputs, and a check that the
-  simulator's inlined copy of the condenser is current;
-- the ears daemon against a fake board on a pseudo-terminal, checking every byte it
-  writes. This one is reported as skipped if `pyserial` is not installed (run
-  `make test PYTHON=/path/to/python3` with an interpreter that has it).
+- **Firmware host tests.** The real sketch, built with the laptop's compiler against
+  fakes of the Arduino libraries: 175 unit checks across the classes, and 14 whole-sketch
+  scenarios whose every serial byte and LCD frame must match transcripts recorded from
+  the sketch before the refactor.
+- **Voice pipeline.** About 150 `unittest` tests covering every edge case in `DESIGN.md`
+  section 5 that can be checked on a laptop, with fakes for the serial port, ffmpeg,
+  whisper, the clock and the LLM.
+- **Condenser, both languages.** `node --test` for `condense.js`, a cross-language test
+  that requires the Python and JavaScript condensers to agree on thousands of inputs, and
+  a check that the simulator's inlined copy is current.
+- **End to end.** The ears daemon as a real process against a fake board on a
+  pseudo-terminal, checking every byte it writes. It is skipped when `pyserial` is not
+  installed (`python3 -m pip install -r tools/voice/requirements.txt`, or
+  `make test PYTHON=/path/to/python3`).
 
-No test calls an LLM or needs a microphone, a model, or a board. `make firmware` compiles
-every sketch for the Mega 2560 if `arduino-cli` is installed.
+No test calls an LLM or needs a microphone, a model, or a board. The hardware checks that
+cannot be automated are in [`firmware/README.md`](firmware/README.md#manual-hardware-test-checklist)
+and `DESIGN.md` section 7.
 
-Hardware checks that cannot be automated are listed in `DESIGN.md`, section 7.
+## Project structure
 
-<!-- BEGIN firmware section: maintained with firmware/README.md -->
-## Firmware
-
-The board sketch in `firmware/tasklot_full_v2/` is split into small C++ classes, one per
-piece of real state: `RfidSlot` (one reader), `CarRegistry` (sticker -> car -> label,
-optional EEPROM), `ParkingLot` (which car is on which space), `LaneDebouncer`,
-`ReadbackText`, `LcdView` (the only code that draws, never blocking), and `SerialProtocol`
-(the exact wire format), coordinated by `TaskLot`. `setup()` and `loop()` are a few lines.
-
-```bash
-firmware/tests/run_tests.sh      # host tests: unit tests + whole-sketch scenarios, needs only c++
-make -C firmware check           # the host tests plus compiling every switch setting with arduino-cli
+```
+.
+├── DESIGN.md                 protocol, data flow, edge cases E-01 to E-43, architecture
+├── Makefile                  make test, make firmware
+├── firmware/
+│   ├── tasklot_full_v2/      the Arduino Mega sketch, one class per piece of board state
+│   ├── tests/                host tests: fake Arduino libraries, unit tests, golden transcripts
+│   └── history/              the seven earlier sketches that built up to v2
+├── tools/
+│   ├── voice/                the laptop side: the tasklot package, condense.js, tests
+│   └── sim/                  the browser simulator, one self-contained HTML file
+├── build/
+│   ├── cad/                  OpenSCAD 3D-printed parts, STL exports, a pre-print audit
+│   ├── laser/                OpenSCAD laser-cut deck and walls, the laser run-file generator
+│   └── wiring/               wire lengths and a 1:1 under-deck wiring plan
+└── docs/
+    ├── make_lcd_frames.py    draws images/lcd-frames.svg from the golden transcripts
+    └── images/               the README images
 ```
 
-The host tests run the real sketch on a laptop against fakes of the Arduino libraries and
-compare every serial byte and LCD frame with transcripts recorded from the sketch before
-the refactor. **The refactor compiles and passes those tests but has not yet been
-re-tested on hardware**; [`firmware/README.md`](firmware/README.md) has the architecture,
-the recorded behaviour, memory use before and after, and the manual hardware checklist.
-<!-- END firmware section -->
+Each folder has its own README. The physical build is parametric OpenSCAD throughout:
+
+![CAD render of the TaskLot deck, LCD frame and drive-through](docs/images/cad-assembly-iso.png)
 
 ## Credits
 
