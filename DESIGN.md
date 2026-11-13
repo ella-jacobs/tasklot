@@ -181,7 +181,7 @@ bench as `3>Charge baCAR 4 Glu`). So every sender paces:
 |---|---|
 | `tasklot_ears.py` | One line per `send()`, under a lock, then `sleep(0.35)`. Non-ASCII is dropped by `encode("ascii", "ignore")`. |
 | `tasklot-sim.html` | A queue; the next line goes only after the board's reply ends (two rule lines, or `PONG`), or after 1.2 s. |
-| `tasklot_voice.py --push` | `sleep(0.08)` between lines (too short; see E-27). |
+| `tasklot_voice.py --push` | `sleep(0.08)` between lines (too short; see E-31). |
 
 Opening the serial port toggles DTR and **resets the Mega**. Every sender waits about
 2-3 s after opening before writing (`ears`: 3 s, `sim`: 2.2 s, `--push`: 2.0 s).
@@ -322,7 +322,7 @@ behaviour is a known gap; the refactor should change it and test the new behavio
 | E-24 | All four spaces full | There is no fifth space; a fifth car simply has nowhere to park. All four lines show tasks. The 3.3 V rail is most stressed in this state (flaky reads). | Keep. Manual: check reads stay reliable with every space and both lanes populated. |
 | E-25 | More than 8 distinct cars | The ninth UID prints `no car slots left` and is ignored until reset. | Keep; the limit as a named constant shared by firmware and laptop (`MAX_CARS = 8`). |
 | E-26 | Car moved directly from space 1 to space 2 | Arrival on 2 releases space 1 immediately (`SPACE 1 -> CAR n left`, then `SPACE 2 <- CAR n parked`); the list reorders, the task is not duplicated. | Keep. Host-side test of `ParkingLot`. |
-| E-27 | Two cars swapped between spaces | Each lift reports `left` after 1.2 s; each set-down reports `parked`. If a car lands before its old space times out, the arrival rule in E-26 releases the old space. Final state is the swapped order. | Keep. Host-side test with a fake clock covering both timings. |
+| E-27 | Two cars swapped between spaces | Slow swap (both cars off their spaces for more than 1.2 s): each lift reports `left`, each set-down reports `parked`, and the final state is the swapped order. Fast swap (both set down within 1.2 s): the presence ping does not check which tag answers, so neither space ever reads empty or sees an arrival, and the board keeps the old assignment, with each label on the other car's line. (This row first said the arrival rule in E-26 catches the fast swap; it does not. See quirk 5 in [`firmware/README.md`](firmware/README.md).) | Keep the slow swap; the fast swap stays a known gap, because fixing it changes the bench-verified reader call sequence. Host-side tests with a fake clock cover both timings. |
 | E-28 | A car is lifted and replaced on the same space quickly (under 1.2 s) | No event; presence ping missed fewer than `GONE_MS`. | Keep. |
 | E-29 | Partial RFID read (UID with a trailing run of zero bytes, or three or more zero bytes) | Rejected by `plausibleUID()`; not registered as a new car. (A "seen twice" rule was tried and reverted because a resting tag is never re-polled.) | Keep. Host-side test with the two bench UIDs `04 D1 60 00 00 00 00` and `04 E1 63 00 00 00 00`. |
 | E-30 | Simulator drives a v2 board | The simulator sends `PARK`, `LEAVE`, `EMPTY` after connecting; v2 replies `* unknown command:` to each. Labels (`CAR`) and `ORDER`/`PLAY`/`DONE` work. | Decide: either v2 accepts `PARK`/`LEAVE`/`EMPTY` (useful when a reader is dead), or the simulator stops sending them to v2. Document whichever. |
@@ -513,11 +513,12 @@ and 3 warnings (two parts need a large-bed printer; the car dimensions are unmea
 
 ## 9. Open questions
 
-1. **Lane pin assignment.** The v2 header comment says speaker SS 36 and pickup SS 37;
-   the code defines `SS_SPEAKER 37` and `SS_PICKUP 36`; `build/wiring/gen_plan.py` labels
-   SS 36 "RECORD" and SS 37 "DRIVE-THROUGH". The code is what ran on the bench and the
-   mock test's boot banner matches it (speaker 37). The comment and the wiring plan should
-   be made to agree with the code once that is confirmed against the physical deck.
+1. **Lane pin assignment.** The original v2 header comment said speaker SS 36 and pickup
+   SS 37; the code defines speaker 37 and pickup 36 (`PIN_SS_SPEAKER`, `PIN_SS_PICKUP` in
+   `config.h`); `build/wiring/gen_plan.py` labels SS 36 "RECORD" and SS 37
+   "DRIVE-THROUGH". The code is what ran on the bench and the mock test's boot banner
+   matches it (speaker 37), so the firmware comments now follow the code. The wiring plan
+   should be made to agree once that is confirmed against the physical deck.
 2. **Does `PLAY` need a timeout?** `FULLSHOW` and a speaker read-back expire after 12 s;
    `PLAY` does not.
 3. **E-30:** should v2 accept `PARK`/`LEAVE`/`EMPTY` from the simulator?
