@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TaskLot OPTIONAL - deck underside guides (requires flipping the deck). VLS 3.60, 609.6 x 304.8 mm bed, origin top-left.
+     red=vector cut  blue=vector etch  black=raster engrave.
+     Generated from tasklot_laser.scad by make_uls_files.py. -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     width="609.6mm" height="304.8mm" viewBox="0 0 609.6 304.8">
+  <title>TaskLot OPTIONAL - deck underside guides (requires flipping the deck)</title>
+  <g transform="translate(10.0,280.0)" fill="none" stroke="#0000FF" stroke-width="0.0254">
+    <path d="
+M 77.5,-245.5 L 10.5,-245.5 L 10.5,-194.5 L 77.5,-194.5 z
+M 11.5,-195.5 L 11.5,-244.5 L 76.5,-244.5 L 76.5,-195.5 z
+M 77.5,-190.5 L 10.5,-190.5 L 10.5,-139.5 L 77.5,-139.5 z
+M 11.5,-140.5 L 11.5,-189.5 L 76.5,-189.5 L 76.5,-140.5 z
+M 260.5,-175.5 L 193.5,-175.5 L 193.5,-124.5 L 260.5,-124.5 z
+M 194.5,-125.5 L 194.5,-174.5 L 259.5,-174.5 L 259.5,-125.5 z
+M 77.5,-135.5 L 10.5,-135.5 L 10.5,-84.5 L 77.5,-84.5 z
+M 11.5,-85.5 L 11.5,-134.5 L 76.5,-134.5 L 76.5,-85.5 z
+M 77.5,-80.5 L 10.5,-80.5 L 10.5,-29.5 L 77.5,-29.5 z
+M 11.5,-30.5 L 11.5,-79.5 L 76.5,-79.5 L 76.5,-30.5 z
+M 283.5,-61.5 L 216.5,-61.5 L 216.5,-10.5 L 283.5,-10.5 z
+M 217.5,-11.5 L 217.5,-60.5 L 282.5,-60.5 L 282.5,-11.5 z
+"/>
+  </g>
+</svg>

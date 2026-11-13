@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TaskLot OPTIONAL - bottom service panel. VLS 3.60, 609.6 x 304.8 mm bed, origin top-left.
+     red=vector cut  blue=vector etch  black=raster engrave.
+     Generated from tasklot_laser.scad by make_uls_files.py. -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     width="609.6mm" height="304.8mm" viewBox="0 0 609.6 304.8">
+  <title>TaskLot OPTIONAL - bottom service panel</title>
+  <g transform="translate(10.0,276.0)" fill="none" stroke="#FF0000" stroke-width="0.0254">
+    <path d="
+M 323.859,-0.458176 L 325.292,-1.72774 L 326,-4 L 326,-262 L 325.542,-263.859 L 324.272,-265.292
+ L 322,-266 L 4,-266 L 2.14111,-265.542 L 0.708069,-264.272 L 0,-262 L 0,-4
+ L 0.458176,-2.14111 L 1.72774,-0.708069 L 4,-0 L 322,-0 z
+M 25,-185 L 25,-230 L 29,-230 L 29,-185 z
+M 185,-185 L 185,-230 L 189,-230 L 189,-185 z
+M 24,-18 L 22.5271,-18.1836 L 20.7183,-18.977 L 19.2652,-20.3147 L 18.3251,-22.0518 L 18,-24
+ L 18,-117 L 18.1836,-118.473 L 18.977,-120.282 L 20.3147,-121.735 L 22.0518,-122.675 L 24,-123
+ L 232,-123 L 233.473,-122.816 L 235.282,-122.023 L 236.735,-120.685 L 237.675,-118.948 L 238,-117
+ L 238,-24 L 237.816,-22.5271 L 237.023,-20.7183 L 235.685,-19.2652 L 233.948,-18.3251 L 232,-18
+ z
+"/>
+  </g>
+</svg>
