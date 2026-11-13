@@ -29,8 +29,8 @@ where you park it is its priority.
                                  |  ^
                        events    |  |   commands  (USB serial, 9600 baud)
                                  v  |
-                     laptop: tools/voice/tasklot_ears.py
-                     mic -> ffmpeg -> whisper.cpp -> condense() -> "CAR n <label>"
+                     laptop: tools/voice/tasklot_ears.py  (the Ears daemon)
+                     mic -> ffmpeg -> whisper.cpp -> Condenser -> "CAR n <label>"
 ```
 
 The sticker stores nothing; it is a key. The board maps each sticker to a car number and
@@ -44,7 +44,7 @@ The full design, the serial protocol, and the edge cases are in [`DESIGN.md`](DE
 |---|---|
 | `firmware/tasklot_full_v2/` | Arduino Mega sketch: six readers, presence detection, the LCD, and the serial command set. |
 | `firmware/history/` | The earlier sketches that built up to v2, with a README explaining each step. |
-| `tools/voice/` | The laptop side: the `tasklot_ears.py` daemon, the rule-based condenser (`condense.js` and its Python port), an offline CLI, and tests. |
+| `tools/voice/` | The laptop side: the `tasklot` Python package (the `Ears` daemon, `Recorder`, `Transcriber`, `Condenser`, `Labeler`, `SerialLink`, `Lot`), `condense.js` for the browser, the original `tasklot_ears.py` / `tasklot_voice.py` commands, and tests. See [`tools/voice/README.md`](tools/voice/README.md). |
 | `tools/sim/` | A browser simulator of the whole lot. It can also drive a real board over Web Serial. |
 | `build/cad/` | Parametric OpenSCAD for the 3D-printed parts, STL exports, and a pre-print audit script. |
 | `build/laser/` | Parametric OpenSCAD for the laser-cut plywood deck and walls, and the run-file generator. |
@@ -62,8 +62,8 @@ arduino-cli compile --fqbn arduino:avr:mega:cpu=atmega2560 firmware/tasklot_full
 arduino-cli upload  --fqbn arduino:avr:mega:cpu=atmega2560 -p <port> firmware/tasklot_full_v2
 ```
 
-**Laptop (macOS).** Python 3, `pyserial`, `ffmpeg`, and whisper.cpp (`whisper-cli`) with
-an English model.
+**Laptop (macOS).** Python 3.9 or later, `pyserial`, `ffmpeg`, and whisper.cpp
+(`whisper-cli`) with an English model. The package itself uses only the standard library.
 
 ```bash
 python3 -m pip install pyserial
@@ -72,7 +72,8 @@ TASKLOT_PORT=/dev/cu.usbmodem101 python3 tools/voice/tasklot_ears.py
 ```
 
 Optional settings: `TASKLOT_WHISPER_MODEL` (model path), `TASKLOT_LLM=0` (turn off the
-LLM label upgrade, which calls the `claude` CLI), `TASKLOT_LLM_TIMEOUT`.
+LLM label upgrade, which calls the `claude` CLI), `TASKLOT_LLM_TIMEOUT`. Every setting is
+listed in [`tools/voice/tasklot/config.py`](tools/voice/tasklot/config.py).
 
 **Simulator.** Open `tools/sim/tasklot-sim.html` in Chrome or Edge. No install.
 
@@ -82,10 +83,16 @@ LLM label upgrade, which calls the `claude` CLI), `TASKLOT_LLM_TIMEOUT`.
 make test
 ```
 
-This runs the condenser fixtures in node and Python, checks the simulator's inlined copy
-of the condenser is current, and runs the ears daemon against a fake board on a
-pseudo-terminal (skipped with a message if `pyserial` is not installed). It never calls an
-LLM. `make firmware` compiles every sketch if `arduino-cli` is installed.
+This needs only `python3` and `node`. It runs the voice pipeline's unit tests
+(`python3 -m unittest`, about 150 tests: every edge case in `DESIGN.md` section 5 that
+can be checked on a laptop), the `node --test` suite for `condense.js`, a cross-language
+test that requires the Python and JavaScript condensers to agree on thousands of inputs,
+and a check that the simulator's inlined copy of the condenser is current. It also runs
+the ears daemon against a fake board on a pseudo-terminal and checks every byte it
+writes; that test is reported as skipped if `pyserial` is not installed (run
+`make test PYTHON=/path/to/python3` with an interpreter that has it). No test calls an
+LLM or needs a microphone, a model, or a board. `make firmware` compiles every sketch if
+`arduino-cli` is installed.
 
 Hardware checks that cannot be automated are listed in `DESIGN.md`, section 7.
 
