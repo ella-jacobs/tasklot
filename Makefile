@@ -1,30 +1,31 @@
 # TaskLot — one command runs every automated check.
 #
-#   make test        condenser fixtures (node + python), simulator copy check,
-#                    and the ears daemon against a fake board (if pyserial is installed)
+#   make test        Python unit tests (stdlib unittest) and node tests (node --test)
+#                    for the voice pipeline. The end-to-end ears test against a fake
+#                    board runs only if pyserial is importable by $(PYTHON); otherwise
+#                    unittest reports it as skipped.
 #   make firmware    compile every sketch for the Mega 2560 (needs arduino-cli + libraries)
 #
-# Everything here is zero-install except the two optional pieces, which say SKIP
-# instead of failing when their tool is missing. TASKLOT_LLM=0 keeps the tests from
-# ever calling an LLM.
+# Zero install: python3 and node are the only requirements for `make test`. No test
+# ever calls an LLM or needs a microphone, a whisper model, or a board.
+#
+# Use a different interpreter (for example one that has pyserial) with:
+#   make test PYTHON=/path/to/python3
 
-VOICE := tools/voice
-FQBN  := arduino:avr:mega:cpu=atmega2560
+PYTHON ?= python3
+NODE   ?= node
+VOICE  := tools/voice
+FQBN   := arduino:avr:mega:cpu=atmega2560
 
-.PHONY: test test-condense test-ears firmware
+.PHONY: test test-python test-node firmware
 
-test: test-condense test-ears
+test: test-python test-node
 
-test-condense:
-	node $(VOICE)/test_condense.js
-	python3 $(VOICE)/test_condense.py
+test-python:
+	cd $(VOICE) && $(PYTHON) -m unittest discover -s tests -t .
 
-test-ears:
-	@if python3 -c "import serial" 2>/dev/null; then \
-		TASKLOT_LLM=0 python3 $(VOICE)/test_ears_mock.py; \
-	else \
-		echo "SKIP  test_ears_mock.py (pyserial not installed: python3 -m pip install pyserial)"; \
-	fi
+test-node:
+	$(NODE) --test $(VOICE)/tests/*.test.js
 
 firmware:
 	@command -v arduino-cli >/dev/null || { echo "SKIP  arduino-cli not installed"; exit 0; }; \
