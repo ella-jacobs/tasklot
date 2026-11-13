@@ -169,7 +169,7 @@ def ascii_only(text) -> str:
     """Flatten text to printable ASCII on one line.
 
     Smart quotes and dashes become their ASCII forms; every other non-printable
-    or non-ASCII character is dropped (so "café" becomes "caf"); runs of
+    or non-ASCII character is dropped (so "cafe" with an accent becomes "caf"); runs of
     whitespace collapse to one space.
 
     Args:
