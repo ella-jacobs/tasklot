@@ -8,7 +8,7 @@
 // sequence, same poll order, same GONE_MS. Do not tidy those - they are the part
 // that is proven on the bench. Everything new sits on top of them.
 //
-// ** THE THREE LINES tasklot-live.html PARSES ARE UNCHANGED, WORD FOR WORD. **
+// ** THE THREE LINES tools/sim/tasklot-sim.html PARSES ARE UNCHANGED, WORD FOR WORD. **
 //      SPACE n  <- CAR m parked
 //      SPACE n  -> CAR m left
 //      * NEW CAR registered -> CAR n
@@ -74,7 +74,7 @@
 // Both look identical to a reader: the space went quiet. So the board never decides
 // a task is done on its own - the laptop does, and says so with DONE.
 //
-// Sent by tasklot-live.html when you dictate a task, and by
+// Sent by tools/sim/tasklot-sim.html when you dictate a task, and by
 // tools/voice/tasklot_voice.py --push. Only one program can hold the port at a
 // time, so close the Serial Monitor before either.
 //

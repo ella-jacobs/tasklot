@@ -109,7 +109,7 @@
 // order. That is a design decision, not an omission.
 //
 // Only one program can hold the port at a time, so close the Serial Monitor
-// before running tasklot-live.html or tools/voice/tasklot_voice.py --push.
+// before running tools/sim/tasklot-sim.html or tools/voice/tasklot_voice.py --push.
 //
 // ---------------------------------------------------------------------------
 // REMEMBERING ACROSS A POWER CUT  (#define REMEMBER)

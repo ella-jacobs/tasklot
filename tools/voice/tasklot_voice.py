@@ -5,7 +5,7 @@
                  (mechanical)  (judgment)
 
 This is the OFFLINE path. The live demo normally dictates straight in
-tasklot-live.html (Chrome's speech recognition, no install, instant). Use this
+the browser page (Chrome's speech recognition, no install, instant). Use this
 one when there's no internet in the room, when a memo was recorded on a phone,
 or when you want a real transcript of a long ramble instead of live dictation.
 
@@ -31,7 +31,7 @@ USAGE
   python3 tasklot_voice.py --push --port /dev/cu.usbmodem14101
 
 Output lands in tasks.json next to this script. Load that file in
-tasklot-live.html with "Load tasks file" and the page pushes it to the LCD over
+the browser page with "Load tasks file" and the page pushes it to the LCD over
 its own connection - which avoids fighting over the port.
 
 AI disclosure: written with Claude (Anthropic) to Ella's spec. Credit it.

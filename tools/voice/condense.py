@@ -8,7 +8,7 @@ change it in BOTH files and run BOTH tests, or the LCD and the page start
 disagreeing about what the same memo said.
 
 One spoken memo -> {"full", "lcd", "due", "raw"}
-  full -> tasklot-live.html   the whole task
+  full -> the browser page   the whole task
   lcd  -> the LCD2004A        18 chars, because "n>" eats two of the twenty
 
 AI disclosure: written with Claude (Anthropic) to Ella's spec. Credit it.

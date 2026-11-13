@@ -21,7 +21,7 @@
 //      PARK <space> <car>    a car is now sitting on that space
 //      LEAVE <space>         that space went quiet
 // They print the SAME two lines the readers print, word for word, so
-// tasklot-live.html and tools/sim parse this board exactly like the real one.
+// tools/sim/tasklot-sim.html parses this board exactly like the real one.
 //
 // ---------------------------------------------------------------------------
 // WIRING - LCD2004A + I2C backpack
@@ -64,7 +64,7 @@
 //   PING             -> PONG
 //
 // Only one program can hold the port at a time. Close the Serial Monitor before
-// running the simulator or tasklot-live.html against this.
+// running the simulator (tools/sim/tasklot-sim.html) against this.
 //
 // AI disclosure: written with Claude (Anthropic) to Ella's design, by lifting the
 // shared half of tasklot_full. LiquidCrystal_I2C is Frank de Brabander's.
