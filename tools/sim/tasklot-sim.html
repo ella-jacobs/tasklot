@@ -1,0 +1,1499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TaskLot — bench simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --teal: #3EC1C7; --teal-dark: #1F8A9E; --cream: #ECEEF1;
+    --ink: #1a1a1a; --paper: #F3F4F6; --navy: #142850;
+    --gold: #F5C518; --green: #3AAA6A; --pink: #E8609A;
+    --purple: #9A3DBF; --haribo: #E3001B;
+    --rule: #d8d2bf; --muted: #5a5346;
+    --asphalt: #2F3237; --paint: #EDE7D3;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.55; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px 96px; }
+
+  .hero { background: var(--teal); color: #fff; padding: 52px 28px 44px; margin-bottom: 32px; }
+  .hero-inner { max-width: 1180px; margin: 0 auto; }
+  .eyebrow { font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--cream); margin: 0 0 14px; }
+  .hero h1 { font-family: 'Inter', sans-serif; font-weight: 900; font-size: clamp(32px, 4.6vw, 54px);
+    line-height: 1.02; margin: 0 0 14px; }
+  .hero h1 em { font-style: italic; font-weight: 400; }
+  .lede { max-width: 62ch; font-size: 17px; margin: 0 0 18px; color: #f3fbfb; }
+  .meta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip { font-family: 'Space Mono', monospace; font-size: 12px; background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.4); border-radius: 999px; padding: 4px 12px; }
+
+  h2 { font-size: 22px; font-weight: 800; margin: 40px 0 6px; display: flex; align-items: baseline; gap: 12px; }
+  h2 .num { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--teal-dark); }
+  .sub { color: var(--muted); margin: 0 0 18px; max-width: 74ch; font-size: 15px; }
+
+  button { font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .1em;
+    text-transform: uppercase; background: var(--navy); color: #fff; border: 1px solid var(--navy);
+    border-radius: 999px; padding: 10px 18px; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--navy); }
+  button:hover { background: var(--teal-dark); border-color: var(--teal-dark); color: #fff; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 20px; }
+
+  .card { background: #fff; border: 1px solid var(--rule); border-radius: 14px; padding: 20px 22px; }
+
+  /* ---------- THE BENCH ---------- */
+  .bench { display: grid; grid-template-columns: minmax(320px, 1fr) minmax(300px, 380px); gap: 26px; align-items: start; }
+  @media (max-width: 900px) { .bench { grid-template-columns: 1fr; } }
+
+  .deck { background: var(--asphalt); border-radius: 14px; padding: 18px; }
+  .decklabel { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .14em;
+    text-transform: uppercase; color: #9aa0a8; margin: 0 0 10px; }
+
+  .slots { display: grid; gap: 10px; }
+  .slot { border: 2px dashed var(--paint); border-radius: 6px; min-height: 62px;
+    display: flex; align-items: center; gap: 12px; padding: 8px 12px; }
+  .slot.over { border-style: solid; border-color: var(--gold); background: rgba(245,197,24,.12); }
+  .slot .rank { font-family: 'Space Mono', monospace; font-weight: 700; font-size: 22px;
+    color: var(--paint); width: 26px; text-align: center; }
+  .slot .hint { font-family: 'Space Mono', monospace; font-size: 11px; color: #8d939b; }
+
+  .pads { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .pad { border: 2px dashed #6b7078; border-radius: 6px; min-height: 62px; padding: 8px 12px;
+    display: flex; align-items: center; gap: 10px; }
+  .pad.over { border-style: solid; border-color: var(--teal); background: rgba(62,193,199,.14); }
+  .pad p { margin: 0; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .08em;
+    text-transform: uppercase; color: #c9ced6; }
+  .pad small { display: block; text-transform: none; letter-spacing: 0; color: #8d939b; font-size: 11px; }
+
+  .garage { margin-top: 14px; border: 2px dashed #6b7078; border-radius: 6px; min-height: 76px;
+    padding: 10px 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .garage.over { border-style: solid; border-color: var(--paint); background: rgba(237,231,211,.10); }
+
+  /* ---------- CARS ---------- */
+  .car { width: 46px; height: 74px; border-radius: 9px 9px 7px 7px; cursor: grab;
+    position: relative; border: 2px solid rgba(0,0,0,.35); flex: 0 0 auto; }
+  .slot .car, .pad .car { transform: rotate(90deg); margin: 0 14px; }
+  .car .glass { position: absolute; left: 6px; right: 6px; top: 12px; height: 18px;
+    background: rgba(255,255,255,.55); border-radius: 3px; }
+  .car .glass2 { position: absolute; left: 6px; right: 6px; bottom: 12px; height: 14px;
+    background: rgba(255,255,255,.38); border-radius: 3px; }
+  .car .n { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Mono', monospace; font-weight: 700; font-size: 15px; color: #10131a; }
+  /* the car body turns to face into the space; the number shouldn't turn with it */
+  .slot .car .n, .pad .car .n { transform: rotate(-90deg); }
+  .car.picked { outline: 3px solid var(--gold); outline-offset: 3px; }
+  .car.done { opacity: .45; }
+  .carlabel { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--paint); }
+  .carlabel small { display: block; color: #8d939b; font-size: 11px; }
+
+  /* ---------- THE LCD ---------- */
+  .lcd { background: #0B2E6B; border: 12px solid #22242a; border-radius: 8px; padding: 16px 18px; }
+  .lcd pre { margin: 0; font-family: 'Space Mono', monospace; font-size: clamp(13px, 1.5vw, 19px);
+    line-height: 1.55; letter-spacing: .1em; color: #EAF4FF; white-space: pre; }
+  .lcdcase { text-align: center; }
+  .lcdnote { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); margin: 12px 0 0; }
+
+  .log { font-family: 'Space Mono', monospace; font-size: 12px; background: #14161b; color: #d7dde6;
+    border-radius: 10px; padding: 12px 14px; height: 250px; overflow-y: auto; white-space: pre-wrap; margin-top: 14px; }
+  .log b { color: var(--gold); font-weight: 400; }
+
+  /* ---------- RECORD ---------- */
+  .rec { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 760px) { .rec { grid-template-columns: 1fr; } }
+  .rec label { display: block; font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .rec select, .rec textarea { width: 100%; font-family: 'Inter', sans-serif; font-size: 15px;
+    border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; background: #fff; color: var(--ink); }
+  .rec textarea { min-height: 88px; resize: vertical; line-height: 1.5; }
+  .heard { font-size: 15px; min-height: 88px; background: var(--paper); border: 1px solid var(--rule);
+    border-radius: 8px; padding: 10px 12px; }
+  .heard.idle { color: var(--muted); }
+  .preview { margin-top: 14px; border-top: 1px solid var(--rule); padding-top: 12px; }
+  .preview dt { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted); }
+  .preview dd { margin: 2px 0 10px; font-size: 15px; }
+  .lcdline { font-family: 'Space Mono', monospace; background: #0B2E6B; color: #EAF4FF;
+    padding: 3px 8px; border-radius: 4px; display: inline-block; letter-spacing: .1em; }
+  .count { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); margin-left: 8px; }
+  button.rec-on { background: var(--haribo); border-color: var(--haribo); }
+  .linkstate { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .06em;
+               color: var(--muted); align-self: center; }
+  .linkstate.live { color: var(--teal-dark); font-weight: 700; }
+  .linkstate.bad  { color: var(--haribo); }
+  button.linked { background: var(--teal-dark); border-color: var(--teal-dark); color: #fff; }
+
+  /* ---------- LIST ---------- */
+  .lineitem { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; border-bottom: 1px solid var(--rule); }
+  .lineitem:last-child { border-bottom: 0; }
+  .lineitem .swatch { width: 14px; height: 14px; border-radius: 3px; margin-top: 5px; border: 1px solid rgba(0,0,0,.3); flex: 0 0 auto; }
+  .lineitem .what { flex: 1; }
+  .lineitem small { display: block; color: var(--muted); font-size: 13px; }
+  .lineitem .tag { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: .1em;
+    background: var(--cream); border-radius: 999px; padding: 3px 10px; white-space: nowrap; }
+  .lineitem.done .what { text-decoration: line-through; color: var(--muted); }
+
+  .notes { background: var(--cream); border-left: 4px solid var(--teal-dark); border-radius: 0 10px 10px 0;
+    padding: 14px 18px; margin-top: 26px; font-size: 14px; }
+  .notes code { font-family: 'Space Mono', monospace; font-size: 13px; }
+  .credit { text-align: center; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); padding: 0 0 40px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">DTUI · Final project · bench simulator</p>
+    <h1>TaskLot <em>on the bench</em></h1>
+    <p class="lede">Order at the speaker, park to end the order, move cars to re-rank, drive into the
+    pickup lane when it's done. The whole interaction with no hardware plugged in — and every line in
+    the log is exactly what the board prints over serial, so what you rehearse here is what the board
+    does.</p>
+    <div class="meta">
+      <span class="chip" id="chip-parked">0 parked</span>
+      <span class="chip" id="chip-cars">4 cars</span>
+      <span class="chip">no hardware needed</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <h2><span class="num">01</span>The lot</h2>
+  <p class="sub"><strong>You order a task the way you order a burger.</strong> Drive a
+  <em>blank</em> car past <strong>the speaker</strong> and say what you need to do — it starts
+  listening. Then <strong>park it</strong>: coming to rest is what ends the order, so there is no
+  stop button. The spot you pick is the priority — space 1 is next up — and moving a car re-ranks
+  the list. Bring a car that <em>already has a task</em> back to the speaker and it
+  <strong>reads it back to you</strong> in full and names the first move — same as a real speaker,
+  which takes your order and then repeats it. When the task is done, drive into the
+  <strong>pickup lane</strong> and the car goes blank, ready to order again.</p>
+
+  <div class="bench">
+    <div>
+      <div class="deck">
+        <p class="decklabel">Parking — order is priority</p>
+        <div class="slots" id="slots"></div>
+
+        <p class="decklabel" style="margin-top:16px">Lanes</p>
+        <div class="pads">
+          <div class="pad" data-pad="drive" id="pad-drive">
+            <p>The speaker<small>blank car: order · loaded car: hear it back</small></p>
+          </div>
+          <div class="pad" data-pad="exit" id="pad-exit">
+            <p>Pickup lane<small>order's up — clears the car</small></p>
+          </div>
+          <div class="pad" data-pad="garage2" id="pad-garage2">
+            <p>Off the lot<small>no order, no change</small></p>
+          </div>
+        </div>
+
+        <p class="decklabel" style="margin-top:16px">Garage — cars with nowhere to be</p>
+        <div class="garage" id="garage"></div>
+      </div>
+
+      <div class="btnrow" style="margin-top:16px">
+        <button id="demo" class="ghost">Load three tasks — car 4 is yours</button>
+        <button id="clear" class="ghost">Clear the lot</button>
+        <button id="reset" class="ghost">Start over</button>
+      </div>
+    </div>
+
+    <div>
+      <p class="decklabel" style="color:var(--muted)">LCD2004A — 20 × 4</p>
+      <div class="lcdcase">
+        <div class="lcd"><pre id="lcd">1&gt;-
+2&gt;-
+3&gt;-
+4&gt;-</pre></div>
+      </div>
+      <p class="lcdnote">Two characters of rank, eighteen of task. Exactly what the board writes.</p>
+
+      <div class="btnrow" style="margin:14px 0 10px">
+        <button id="connect" class="ghost">Attach the real LCD</button>
+        <span id="linkstate" class="linkstate">not attached — this panel is the simulated screen</span>
+      </div>
+
+      <div class="log" id="log">— simulator ready, no board attached —</div>
+    </div>
+  </div>
+
+  <h2><span class="num">02</span>What the speaker heard</h2>
+  <p class="sub">This panel is the laptop's half of an order — you never touch it during the
+  interaction. Driving a car past the speaker starts the mic; parking the car ends it and binds
+  what was heard. The long version stays on this page, an 18-character version goes to the screen.
+  <strong>Typing is the offline fallback</strong>: type while a car is at the speaker and parking
+  binds that instead.</p>
+
+  <div class="card">
+    <div class="rec">
+      <div>
+        <label for="carpick">Which car</label>
+        <select id="carpick"></select>
+        <div class="btnrow" style="margin:14px 0 0">
+          <button id="mic" class="ghost">Mic — the speaker does this for you</button>
+          <button id="usetext" class="ghost">Use typed text</button>
+        </div>
+        <div style="margin-top:14px">
+          <label for="typed">Or type it (works offline)</label>
+          <textarea id="typed" placeholder="I need to email the professor about the poster by Friday"></textarea>
+        </div>
+      </div>
+      <div>
+        <label>What it heard</label>
+        <div class="heard idle" id="heard">nothing yet</div>
+        <dl class="preview" id="preview" style="display:none">
+          <dt>Task — for the page</dt><dd id="p-full"></dd>
+          <dt>Task — for the LCD</dt>
+          <dd><span class="lcdline" id="p-lcd"></span><span class="count" id="p-count"></span></dd>
+          <dt>Due</dt><dd id="p-due"></dd>
+        </dl>
+        <div class="btnrow" style="margin-top:4px">
+          <button id="assign" class="ghost">Bind it by hand (fallback)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2><span class="num">03</span>The list</h2>
+  <p class="sub">One line per car. Parked = ranked, out of the lot = done.</p>
+  <div class="card" id="tasklist"></div>
+
+  <div class="notes">
+    <strong>This is a rehearsal rig, and a backup.</strong> If a reader goes quiet five minutes
+    before the review, this page demonstrates the whole interaction on a laptop — the same
+    condensing code, the same screen layout, the same serial vocabulary as
+    <code>firmware/tasklot_full</code>. What it can't prove is that the RC522s read through the
+    deck. That still has to happen on the bench.
+  </div>
+
+</div>
+
+<p class="credit">TaskLot · Ella Jacobs · built with Claude (Anthropic) as a coding assistant</p>
+
+<!-- The condenser. GENERATED from tasklot/tools/voice/condense.js — do not edit it here.
+     Re-inline after editing the source:  python3 tools/voice/sync_page.py  -->
+<script>
+/* ===== BEGIN condense.js ===== */
+/* TaskLot — condense.js
+ *
+ * ONE spoken memo  ->  { full, lcd, due, car }
+ *
+ * This is the JUDGMENT half of the voice pipeline. The MECHANICAL half (audio ->
+ * text) is whisper, and it lives in tasklot_voice.py. Same split as a
+ * classic voice-memo pipeline: a dumb transcriber, then a layer that decides what the text
+ * MEANS and where it goes.
+ *
+ * Two sinks, two shapes:
+ *   full -> tasklot-live.html      the whole task, however long
+ *   lcd  -> the LCD2004A, 18 chars  what fits on one of four lines
+ *
+ * ** THIS FILE IS CANONICAL. ** condense.py is a port of it. Both are checked
+ * against tools/voice/cases.json so they cannot drift apart silently.
+ *
+ * Runs unchanged in the browser (<script src>) and in node (require).
+ *
+ * AI disclosure: written with Claude (Anthropic) to Ella's spec. Credit it.
+ */
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) module.exports = factory();
+  else root.TaskLotCondense = factory();
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // The LCD is 20 chars wide. Two of them go to the priority marker ("1>"),
+  // which leaves this much for the task itself. Change it here, nowhere else.
+  var LCD_WIDTH = 20;
+  var LCD_TEXT  = 18;
+
+  // ---------------------------------------------------------------------------
+  // 1. Disfluency. Whisper transcribes every "um" faithfully.
+  // ---------------------------------------------------------------------------
+  var FILLER = [
+    /\b(um+|uh+|er+|ah+|hmm+|mm+)\b/gi,
+    /\b(you know|i mean|like i said|sort of|kind of|kinda|sorta)\b/gi,
+    /^\s*(ok(ay)?|so|alright|right|well|anyway|and)\b[,\s]*/i,
+    /\b(basically|literally|honestly|actually|really|just)\b/gi
+  ];
+
+  // ---------------------------------------------------------------------------
+  // 2. Intent prefixes. "I need to email the professor" is the task "Email the professor".
+  //    Order matters — longest first, so "I have got to" beats "I have".
+  // ---------------------------------------------------------------------------
+  var INTENT = new RegExp(
+    '^\\s*(?:' + [
+      'note to self(?:,)?',
+      'reminder(?:,)?', 'remind me (?:to|that i (?:need|have) to)',
+      "don'?t forget (?:to|about)",
+      'i (?:really )?(?:need|have|ought|want|meant|forgot|gotta|got)\\s*(?:to|ta)?',
+      "i'?ve (?:got|gotta) to", "i'?m (?:going to|gonna)", "i'?ll",
+      'i should', 'we (?:need|have) to', 'we should',
+      'make sure (?:that )?(?:i|we) ?(?:need to)?',
+      'remember to', 'todo(?::)?', 'task(?::)?', 'new task(?::)?'
+    ].join('|') + ')\\b[,:\\s]*', 'i');
+
+  // ---------------------------------------------------------------------------
+  // 3. When it's due. Pulled OUT of the text — the LCD has no room for it and
+  //    the page shows it as its own field.
+  // ---------------------------------------------------------------------------
+  var DUE = [
+    /\b(?:by|before|due|on)\s+(tomorrow morning|tomorrow night|tomorrow|tonight|today|this (?:morning|afternoon|evening|week|weekend)|next week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i,
+    /\b(?:by|at|before)\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i,
+    /\b(?:by|before|on)\s+((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}(?:st|nd|rd|th)?|\d{1,2}\/\d{1,2})\b/i,
+    /\b(tomorrow (?:morning|afternoon|night)|tomorrow|tonight|today|this (?:morning|afternoon|evening|weekend)|next week)\b/i
+  ];
+
+  // ---------------------------------------------------------------------------
+  // 4. Where a sentence stops being the task and starts being the reason.
+  //    "Email the professor about whether we still need the poster" -> cut at "about".
+  //    This is what makes the LCD line read like a task and not like a fragment.
+  // ---------------------------------------------------------------------------
+  var CLAUSE = /\s+\b(?:about|because|since|so that|so|which|whether|that i|if i|but|and then|before i|after i|in order to|to see|to ask|to find out|for the (?:sake|reason))\b\s+/i;
+
+  // ---------------------------------------------------------------------------
+  // 5. LCD-only abbreviations. Conservative on purpose: a bad abbreviation
+  //    reads worse than an honest truncation.
+  // ---------------------------------------------------------------------------
+  var ABBREV = [
+    [/\bprofessors?\b/gi, 'Prof'], [/\bappointments?\b/gi, 'appt'],
+    [/\bmeetings?\b/gi, 'mtg'],    [/\bhomework\b/gi, 'HW'],
+    [/\bassignments?\b/gi, 'asgmt'], [/\bpresentations?\b/gi, 'pres'],
+    [/\bprojects?\b/gi, 'proj'],   [/\bapplications?\b/gi, 'app'],
+    [/\blaboratory\b/gi, 'lab'],   [/\blibrary\b/gi, 'lib'],
+    [/\bmessages?\b/gi, 'msg'],    [/\bschedule\b/gi, 'sched'],
+    [/\bquestions?\b/gi, 'Q'],     [/\bminutes?\b/gi, 'min'],
+    [/\btomorrow\b/gi, 'tmrw'],    [/\bdeadline\b/gi, 'due'],
+    [/\breservations?\b/gi, 'resv'],[/\bregistration\b/gi, 'reg'],
+    [/\band\b/gi, '&'],            [/\bwith\b/gi, 'w/'],
+    [/\bwithout\b/gi, 'w/o'],      [/\bnumber\b/gi, '#'],
+    [/\bversus\b/gi, 'vs']
+  ];
+
+  var ARTICLES = /\b(?:the|a|an|my|our)\s+/gi;
+
+  // Trailing detail lives in prepositional phrases. "Print the reader coupon
+  // before class" -> "Print the reader coupon". Trimmed from the right, one
+  // phrase at a time, and never below a two-word verb phrase.
+  var PREPS = ['about','before','after','during','against','onto','into',
+               'for','from','with','under','over','at','in','on','to','by','re'];
+
+  // ---------------------------------------------------------------------------
+
+  // HD44780 ROM is ASCII. Smart quotes and dashes come out as garbage blocks,
+  // so they get flattened before anything else.
+  function ascii(s) {
+    return String(s || '')
+      .replace(/[‘’ʼ]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/[–—]/g, '-')
+      .replace(/…/g, '...')
+      .replace(/[^\x20-\x7E]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function tidy(s) {
+    return s.replace(/\s+/g, ' ')
+            .replace(/\s+([,.;:!?])/g, '$1')
+            .replace(/^[\s,.;:-]+/, '')
+            .replace(/[\s,;:]+$/, '')
+            .trim();
+  }
+
+  function sentenceCase(s) {
+    if (!s) return s;
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  // Cut to n chars, preferring a word boundary. No ellipsis — the LCD has no
+  // "…" glyph and spending 3 of 18 chars on dots is a bad trade.
+  function clip(s, n) {
+    if (s.length <= n) return s;
+    var cut = s.slice(0, n);
+    var sp = cut.lastIndexOf(' ');
+    // Only honour the word boundary if it doesn't throw away most of the line.
+    if (sp >= Math.floor(n * 0.55)) cut = cut.slice(0, sp);
+    return cut.replace(/[\s,.;:-]+$/, '');
+  }
+
+  // Drop trailing prepositional phrases, rightmost first, until it fits or
+  // there's nothing left to drop. Stops while a real verb phrase remains.
+  function trimPhrases(s, width) {
+    while (s.length > width) {
+      var words = s.split(' ');
+      var cut = -1;
+      for (var i = words.length - 2; i >= 2; i--) {
+        if (PREPS.indexOf(words[i].toLowerCase()) >= 0) { cut = i; break; }
+      }
+      if (cut < 0) return s;
+      s = words.slice(0, cut).join(' ');
+    }
+    return s;
+  }
+
+  // Last resort before truncation: when a line misses by only a character or
+  // three, pull interior vowels out of its longest word. "Print reader coupon"
+  // (19) -> "Print reader coupn" (18). Classic LCD trick, and it keeps the noun
+  // that truncation would have thrown away whole.
+  function devowel(s, width) {
+    var over = s.length - width;
+    if (over <= 0 || over > 3) return s;
+    var words = s.split(' ');
+    // longest word, latest one on a tie - trailing detail is the safer thing to squash
+    var pick = 0;
+    for (var i = 0; i < words.length; i++) if (words[i].length >= words[pick].length) pick = i;
+    var w = words[pick];
+    if (w.length < 5) return s;
+    while (over > 0) {
+      // rightmost interior vowel: never the first or last character of the word
+      var cut = -1;
+      for (var j = w.length - 2; j >= 1; j--) {
+        if ('aeiouAEIOU'.indexOf(w.charAt(j)) >= 0) { cut = j; break; }
+      }
+      if (cut < 0) break;
+      w = w.slice(0, cut) + w.slice(cut + 1);
+      over--;
+    }
+    words[pick] = w;
+    return words.join(' ');
+  }
+
+  /**
+   * The whole job.
+   * @param {string} transcript  raw whisper text (messy is expected)
+   * @param {object} [opts]      { width: LCD text width, default 18 }
+   * @returns {{full:string, lcd:string, due:string, raw:string}}
+   */
+  function condense(transcript, opts) {
+    opts = opts || {};
+    var width = opts.width || LCD_TEXT;
+
+    var raw = ascii(transcript);
+    if (!raw) return { full: '', lcd: '', due: '', raw: '' };
+
+    // -- strip disfluency ----------------------------------------------------
+    // Looped, because the leading-filler rule is anchored and only fires once
+    // per pass. Real whisper output stacks them: "Um okay so I really need to".
+    var t = raw, before;
+    for (var pass = 0; pass < 4; pass++) {
+      before = t;
+      for (var i = 0; i < FILLER.length; i++) t = t.replace(FILLER[i], ' ');
+      t = tidy(t);
+      if (t === before) break;
+    }
+
+    // -- pull the due hint out before anything eats it -----------------------
+    var due = '';
+    for (var d = 0; d < DUE.length; d++) {
+      var m = t.match(DUE[d]);
+      if (m) { due = m[1].toLowerCase(); t = tidy(t.replace(m[0], ' ')); break; }
+    }
+
+    // -- drop the intent prefix ("I need to ...") ----------------------------
+    // Looped: "I need to remember to call her" stacks two of them.
+    for (var k = 0; k < 3; k++) {
+      before = t;
+      t = tidy(t.replace(INTENT, ''));
+      if (t === before) break;
+    }
+
+    // -- one task per memo: keep the first sentence ---------------------------
+    var firstStop = t.search(/[.!?]\s+[A-Z]/);
+    var full = tidy(firstStop > 0 ? t.slice(0, firstStop + 1) : t);
+    full = sentenceCase(full.replace(/[.\s]+$/, ''));
+
+    // -- now squeeze, in stages, until it fits --------------------------------
+    var lcd = full;
+
+    // (a) cut the explanation off the task
+    if (lcd.length > width) {
+      var c = lcd.search(CLAUSE);
+      if (c > 0) lcd = tidy(lcd.slice(0, c));
+    }
+    // (b) drop trailing prepositional detail
+    if (lcd.length > width) lcd = tidy(trimPhrases(lcd, width));
+    // (c) abbreviate
+    if (lcd.length > width) {
+      for (var a = 0; a < ABBREV.length; a++) lcd = lcd.replace(ABBREV[a][0], ABBREV[a][1]);
+      lcd = tidy(lcd);
+    }
+    // (d) drop articles
+    if (lcd.length > width) lcd = tidy(lcd.replace(ARTICLES, ''));
+    // (e) squeeze vowels if it misses by a hair
+    if (lcd.length > width) lcd = devowel(lcd, width);
+    // (f) truncate
+    lcd = clip(sentenceCase(lcd), width);
+
+    return { full: full, lcd: lcd, due: due, raw: raw };
+  }
+
+  /**
+   * THE NUDGE — the line the speaker adds when it reads a task back.
+   *
+   * Playing the task back verbatim is just a recording. The point of driving up
+   * to the speaker is that you are about to DO the thing, so the last line names
+   * the first physical move: "just open Gmail and get started." Small, concrete,
+   * and impossible to argue with — which is the whole reason it works on a brain
+   * that is avoiding the task.
+   *
+   * Rule-based on purpose. It has to run offline, in a browser, with no network
+   * and no model, and give the same answer every time so a demo is rehearsable.
+   * Order matters: the specific patterns are tested before the general ones.
+   *
+   * @param {string} text  the full task
+   * @returns {string} one sentence, always non-empty
+   */
+  var NUDGE = [
+    [/\b(gmail|email|e-mail|inbox|reply|write back)\b/i, 'Just open Gmail and get started.'],
+    [/\b(call|phone|ring|voicemail)\b/i,                 'Just pick up the phone. It is a two-minute call.'],
+    [/\b(text|message|dm|slack)\b/i,                     'Open the thread and send one line.'],
+    [/\b(print|printer|coupon)\b/i,                      'The printer is right there. Go hit print.'],
+    [/\b(charge|battery|plug|outlet)\b/i,                'Go plug it in. That is the whole task.'],
+    [/\b(pay|bill|invoice|venmo|rent)\b/i,               'Open the app and pay it now.'],
+    [/\b(book|schedule|appointment|reserve|rsvp)\b/i,    'Open the calendar and pick a time.'],
+    [/\b(submit|turn in|upload|hand in|send)\b/i,        'Attach it and hit send.'],
+    [/\b(report|essay|draft|paper|write|writing)\b/i,    'Open the doc and write one bad sentence.'],
+    [/\b(study|review|revise|practice|problem set|pset)\b/i, 'Open it and do one problem.'],
+    [/\b(read|chapter|article|paper)\b/i,                'Open it and read one page.'],
+    [/\b(buy|order|cart|groceries|pick up)\b/i,          'Pull it up and add it to the cart.'],
+    [/\b(clean|tidy|laundry|dishes|trash|organize)\b/i,  'Set a timer for five minutes and start.'],
+    [/\b(glue|cut|solder|wire|assemble|build|sand|paint)\b/i, 'Get the parts out on the table.'],
+    [/\b(pack|laundry|bag)\b/i,                          'Put one thing in the bag.']
+  ];
+
+  function firstStep(text) {
+    var t = ascii(text || '');
+    for (var i = 0; i < NUDGE.length; i++) {
+      if (NUDGE[i][0].test(t)) return NUDGE[i][1];
+    }
+    return 'Start with the first small piece. That is all you have to do.';
+  }
+
+  /**
+   * What the speaker SAYS when a loaded car pulls up — the whole read-back.
+   * Task, then when it is due if a due date was heard, then the nudge.
+   * @param {{full:string, due:string}} task
+   * @returns {string} one spoken string, or '' if there is nothing to read back
+   */
+  function playback(task) {
+    if (!task || !task.full) return '';
+    var out = task.full.replace(/[.\s]+$/, '') + '.';
+    if (task.due) out += ' Due ' + task.due + '.';
+    return out + ' ' + firstStep(task.full);
+  }
+
+  /**
+   * Render the four LCD lines from the lot state. Space order IS priority order:
+   * space 1 is the top of the list, and moving a car moves the task.
+   * @param {Array} lot  4 entries, each null or { lcd } / a string
+   * @returns {string[]} exactly 4 lines of exactly LCD_WIDTH chars
+   */
+  function lotLines(lot, width) {
+    width = width || LCD_WIDTH;
+    var out = [];
+    for (var i = 0; i < 4; i++) {
+      var item = lot && lot[i];
+      var text = !item ? '-' : (typeof item === 'string' ? item : (item.lcd || item.full || '-'));
+      var line = (i + 1) + '>' + clip(ascii(text), width - 2);
+      while (line.length < width) line += ' ';
+      out.push(line);
+    }
+    return out;
+  }
+
+  return {
+    condense: condense,
+    firstStep: firstStep,
+    playback: playback,
+    lotLines: lotLines,
+    clip: clip,
+    devowel: devowel,
+    trimPhrases: trimPhrases,
+    ascii: ascii,
+    LCD_WIDTH: LCD_WIDTH,
+    LCD_TEXT: LCD_TEXT
+  };
+});
+/* ===== END condense.js ===== */
+</script>
+
+<script>
+// ===========================================================================
+// TaskLot — bench simulator
+//
+// A stand-in for the wired build. It runs the SAME logic the firmware runs, in
+// the same order, and prints the SAME serial lines, so rehearsing here is
+// rehearsing the real thing:
+//
+//   * NEW CAR registered -> CAR n   UID ..
+//   SPACE n  <- CAR m parked
+//   SPACE n  -> CAR m left
+//   TASK n <text>
+//   the 20-char lot block
+//
+// Mirrors firmware/tasklot_full/tasklot_full.ino. If you change the wording
+// there, change it here — the whole point is that they match.
+// ===========================================================================
+
+const CD = window.TaskLotCondense;
+
+// ===========================================================================
+// THE BRIDGE — drive the REAL LCD from this page.
+//
+// firmware/lcd_bridge runs the LCD half of tasklot_full and takes the events a
+// reader would have produced as serial commands. So every drag on this deck can
+// move the physical screen, with no RC522 wired to anything.
+//
+//   park(s,n)  -> PARK <s> <n>        leave(n) -> LEAVE <s>
+//   setTask    -> CAR <n> <18 chars>  done     -> DONE <n>
+//
+// ** ONE COMMAND AT A TIME. ** The board's serial RX buffer is 64 bytes and
+// printLot() blocks it for ~135 ms writing six lines at 9600 baud — long enough
+// for a burst to overrun the buffer and merge two commands into one. That is not
+// hypothetical; it corrupted a task line on the bench on 8/25 ("Charge baCAR 4
+// Glu"). So sendQ() queues, and pump() will not send the next line until the
+// board has finished answering the last one. Never write to the port directly.
+//
+// Chrome or Edge only — Safari and Firefox have no Web Serial. The Arduino
+// Serial Monitor must be CLOSED or it holds the port.
+// ===========================================================================
+const BRIDGE = (function () {
+  let port = null, writer = null, live = false;
+  let queue = [], busy = false;
+  let waiter = null;                       // resolve() for the in-flight command
+
+  function state(text, cls) {
+    const el = document.getElementById('linkstate');
+    if (el) { el.textContent = text; el.className = 'linkstate' + (cls ? ' ' + cls : ''); }
+  }
+
+  // Every line the board sends back, into the same log as the simulated ones.
+  function onLine(line) {
+    if (line) log('⮐ ' + line);       // ⮐ marks "this came from the board"
+    if (line) followBoard(line);      // ...and DO something about it
+    if (!waiter) return;
+    waiter.seen.push(line);
+    if (line.startsWith('-----')) waiter.rules++;
+    if (waiter.rules >= 2 || line === 'PONG') waiter.done();
+  }
+
+  async function readLoop() {
+    const dec = new TextDecoder();
+    let buf = '';
+    const reader = port.readable.getReader();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          onLine(buf.slice(0, i).replace(/\r$/, ''));
+          buf = buf.slice(i + 1);
+        }
+      }
+    } catch (e) {
+      state('the board went away — ' + e.message, 'bad');
+      live = false;
+    } finally {
+      try { reader.releaseLock(); } catch (e) {}
+    }
+  }
+
+  // Wait for the board to finish answering, or give up after `ms`. Giving up is
+  // not a failure — PING answers with one line, and a no-op PARK answers with
+  // nothing at all.
+  function awaitAck(ms) {
+    return new Promise(resolve => {
+      let settled = false;
+      const finish = () => { if (settled) return; settled = true; waiter = null;
+                             clearTimeout(t); resolve(); };
+      const t = setTimeout(finish, ms);
+      waiter = { seen: [], rules: 0, done: finish };
+    });
+  }
+
+  async function pump() {
+    if (busy || !live || !queue.length) return;
+    busy = true;
+    const line = queue.shift();
+    try {
+      await writer.write(new TextEncoder().encode(line + '\n'));
+      log(line, true);
+      await awaitAck(1200);
+    } catch (e) {
+      state('write failed — ' + e.message, 'bad');
+      live = false;
+    }
+    busy = false;
+    pump();
+  }
+
+  function send(line) {
+    if (!live) return;
+    if (fromBoard) return;      // echo guard - see followBoard()
+    queue.push(line);
+    pump();
+  }
+
+  // =========================================================================
+  // FOLLOW THE BOARD — the half that makes a WIRED deck work.
+  //
+  // With tasklot_full_v2 on a wired deck the READERS drive everything: the board
+  // owns the LCD and decides order-vs-read-back on its own. But the board has no
+  // microphone and no speaker, so somebody has to hear "a car is at the speaker"
+  // and actually start recording. That is this.
+  //
+  // ** NOBODY TOUCHES THE LAPTOP DURING THE DEMO. ** It is under the table.
+  // The operator opens this page once and clicks Attach; from then on every event comes
+  // from a car being moved on the deck, and the only thing the laptop does is
+  // listen and talk. Nothing below is triggered by a click.
+  //
+  //   SPEAKER  CAR n ordering       -> start the mic
+  //   SPACE n  <- CAR m parked      -> stop it, condense, send the text back
+  //   PLAYBACK CAR n reading back   -> say the full task out loud
+  //   PICKUP   CAR n collected      -> that car is a blank key again
+  //
+  // ** ECHO GUARD. ** Applying a board event through the page's own park()/leave()
+  // would send the same command straight back down the wire and loop. fromBoard
+  // suppresses every outbound send while a board event is being applied.
+  // =========================================================================
+  let fromBoard = false;
+  let boardRecording = null;      // which car the board says is at the speaker
+
+  function followBoard(line) {
+    let m;
+
+    // a car is at the speaker, blank -> it is placing an order
+    if ((m = line.match(/^SPEAKER\s+CAR\s+(\d+)/i))) {
+      const n = Number(m[1]);
+      boardRecording = n;
+      fromBoard = true;
+      try { startOrder(n); } finally { fromBoard = false; }
+      return;
+    }
+
+    // a car is at the speaker, loaded -> read it back
+    if ((m = line.match(/^PLAYBACK\s+CAR\s+(\d+)/i))) {
+      const n = Number(m[1]);
+      fromBoard = true;
+      try { playBack(n); } finally { fromBoard = false; }
+      return;
+    }
+
+    // a car parked. If it was the one ordering, THAT is the stop gesture.
+    if ((m = line.match(/^SPACE\s+(\d+)\s+<-\s+CAR\s+(\d+)\s+parked/i))) {
+      const space = Number(m[1]), n = Number(m[2]);
+      fromBoard = true;
+      try { park(space, n); } finally { fromBoard = false; }
+      // park() closed the order and bound whatever was heard; now tell the board
+      // the words, because the board could not hear them. This is the ONE thing
+      // the page sends on its own, and it is why the LCD shows text at all.
+      if (boardRecording === n) {
+        boardRecording = null;
+        const t = task[n];
+        if (t && t.lcd) send('CAR ' + n + ' ' + t.lcd);
+      }
+      return;
+    }
+
+    if ((m = line.match(/^SPACE\s+(\d+)\s+->\s+CAR\s+(\d+)\s+left/i))) {
+      const n = Number(m[2]);
+      fromBoard = true;
+      try { leave(n, 'left the space'); } finally { fromBoard = false; }
+      return;
+    }
+
+    // the pickup lane collected one
+    if ((m = line.match(/^PICKUP\s+CAR\s+(\d+)/i))) {
+      const n = Number(m[1]);
+      fromBoard = true;
+      try {
+        if (task[n]) { completed[n] = task[n]; delete task[n]; }
+        doneCars[n] = true;
+        leave(n, 'collected');
+        announceAllDone();
+      } finally { fromBoard = false; }
+      render();
+      return;
+    }
+  }
+
+  // Opening the port RESETS the board, which wipes its car list. So the first
+  // thing we do after connecting is tell it everything this page already knows.
+  async function pushState() {
+    for (let n = 1; n <= CARS.length; n++) {
+      const t = task[n];
+      if (t && t.lcd) send('CAR ' + n + ' ' + t.lcd);
+    }
+    send('EMPTY');
+    for (let o = 0; o < NUM_SPACES; o++) {
+      if (occupant[o]) send('PARK ' + (o + 1) + ' ' + occupant[o]);
+    }
+  }
+
+  async function connect() {
+    if (!('serial' in navigator)) {
+      state('this browser has no Web Serial — use Chrome or Edge', 'bad');
+      return;
+    }
+    try {
+      port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      writer = port.writable.getWriter();
+      live = true;
+      readLoop();
+      state('attached — waiting for the board to boot…', 'live');
+      document.getElementById('connect').classList.add('linked');
+      document.getElementById('connect').textContent = 'Real LCD attached';
+      // Opening the port pulls DTR and resets the board; it needs ~2 s before it
+      // is listening. Anything sent before that is thrown away by the bootloader.
+      setTimeout(async () => {
+        state('attached — the real screen is following this deck', 'live');
+        await pushState();
+      }, 2200);
+    } catch (e) {
+      state(e.name === 'NotFoundError' ? 'no port picked' : e.message, 'bad');
+    }
+  }
+
+  return {
+    connect: connect,
+    isLive: () => live,
+    order: (n)    => send('ORDER ' + n),
+    play:  (n)    => send('PLAY ' + n),
+    endplay: ()   => send('LOT'),
+    park:  (s, n) => send('PARK ' + s + ' ' + n),
+    leave: (s)    => send('LEAVE ' + s),
+    task:  (n, t) => send('CAR ' + n + ' ' + t),
+    done:  (n)    => send('DONE ' + n),
+    clear: ()     => send('CLEAR'),
+    _follow: followBoard        // exposed so the flow can be tested with no board attached
+  };
+})();
+
+const NUM_SPACES = 4;
+const MAX_CARS = 8;
+
+// The toy cars. UIDs are made up but shaped like real NTAG213 ones — 7 bytes,
+// which is what a sticker gives you. (A 4-byte UID starting 0x08 is a random
+// one and would register as a new car every tap; that's a real failure mode.)
+const CARS = [
+  { n: 1, color: '#E3001B', uid: '04 A2 13 5B 6C 80 00' },
+  { n: 2, color: '#F5C518', uid: '04 7F 21 90 3A 80 00' },
+  { n: 3, color: '#3EC1C7', uid: '04 C1 44 2E 11 80 00' },
+  { n: 4, color: '#9A3DBF', uid: '04 55 8D 07 F2 80 00' }
+];
+
+let occupant = [null, null, null, null];   // car number parked in each space
+let task = {};                             // car -> { full, lcd, due }  — what the car is CARRYING
+let completed = {};                        // car -> the task it finished, for the list only
+let doneCars = {};                         // car -> true, driven out of the lot
+let registered = {};                       // car -> true, UID seen at least once
+let picked = null;                         // car selected by click (drag alternative)
+let draft = null;                          // the task being recorded
+
+// ---------------------------------------------------------------------------
+// serial log — everything the board would say
+// ---------------------------------------------------------------------------
+function log(line, mine) {
+  const box = document.getElementById('log');
+  if (box.textContent.startsWith('—')) box.textContent = '';
+  box.textContent += (mine ? '> ' : '') + line + '\n';
+  box.scrollTop = box.scrollHeight;
+}
+
+// The lot, top space first. THIS IS THE PRIORITY LIST — same function the
+// board runs, same padding, same fallback to "CAR n" for a parked car with no
+// task recorded yet.
+function printLot() {
+  const lot = occupant.map(n => {
+    if (!n) return null;
+    return { lcd: task[n] && task[n].lcd ? task[n].lcd : 'CAR ' + n };
+  });
+  // While an order is open the screen belongs to the order, not the lot — same as
+  // the board's showOrdering(). Driving past the speaker is then visible from
+  // across a room, which is the point.
+  // The lot always goes to the log — that is what the board puts on the wire —
+  // and is always rendered into lotText. The GLASS is left to paintScreen(),
+  // which may be showing an overlay instead.
+  const lines = CD.lotLines(lot);
+  log('--------------------');
+  lines.forEach(l => log(l.replace(/\s+$/, '')));
+  log('--------------------');
+  lotText = lines.join('\n');
+  paintScreen();
+}
+
+// ===========================================================================
+// THE ORDER — the whole recording interaction, and it has no buttons in it.
+//
+// Drive a car past THE SPEAKER and you are placing an order: the laptop starts
+// listening and the screen says so. The order ends when the car PARKS. Coming to
+// rest is the stop gesture, which is why there is no Stop button and no playback
+// step — the two things that used to need someone to reach under the table.
+//
+// Whatever was heard between the speaker and the space is condensed and bound to
+// that car, and the space it landed in is its priority. One motion: speak, park,
+// ranked.
+//
+// If nothing was heard (no mic, silence, denied permission), the car parks
+// anyway and shows "CAR n" — an order with no words is still a car in a space.
+// Type into the box below and it binds to the same car.
+// ===========================================================================
+let ordering = null;          // which car is ORDERING at the speaker, or null
+let playing  = null;          // which car is being READ BACK at the speaker, or null
+
+// --------------------------------------------------------------------------
+// THE SCREEN OVERLAYS — mirrors firmware/lcd_bridge exactly, including the flash.
+//
+//   ORDER IN PROGRESS   flashes slowly while you are talking at the speaker
+//   ORDER IS IN         flashes fast for a beat after you park, THEN the list
+//                       reorganises behind it
+//
+// ORDER IS IN only fires when a task was actually just recorded — the speaker
+// only opens an order for a BLANK car, so "an order was open" IS the test for
+// first-time. Moving an already-loaded car between spaces reorders silently.
+// --------------------------------------------------------------------------
+let overlay   = null;         // null | 'ordering' | 'playing' | 'announce'
+let announceMsg = '';         // what an 'announce' overlay says
+let flashOn   = true;
+let flashAt   = Date.now();
+let orderInTimer = null;
+let lotText   = '1>-\n2>-\n3>-\n4>-';
+const FLASH_SLOW_MS = 500, FLASH_FAST_MS = 220, ANNOUNCE_MS = 1600;
+
+const pad20 = l => (l + '                    ').slice(0, 20);
+const mid20 = l => pad20(' '.repeat(Math.max(0, Math.floor((20 - l.length) / 2))) + l);
+
+function paintScreen() {
+  const el = document.getElementById('lcd');
+  if (overlay === 'ordering') {
+    el.textContent = [flashOn ? mid20('ORDER IN PROGRESS') : pad20(''),
+                      mid20('CAR ' + ordering),
+                      mid20('listening...'),
+                      mid20('park it when done')].join('\n');
+  } else if (overlay === 'announce') {
+    el.textContent = [pad20(''), flashOn ? mid20(announceMsg) : pad20(''),
+                      pad20(''), pad20('')].join('\n');
+  } else if (overlay === 'playing') {
+    const lab = (task[playing] && task[playing].lcd) || '(no task)';
+    el.textContent = [mid20('YOUR ORDER'), mid20(lab),
+                      mid20('CAR ' + playing), mid20('...listen up')].join('\n');
+  } else {
+    el.textContent = lotText;
+  }
+}
+
+// One ticker for every flash. Cheap when nothing is overlaid, and there is only
+// ever one, so an overlay ending can never leave a stray timer running.
+setInterval(() => {
+  if (overlay !== 'ordering' && overlay !== 'announce') return;
+  const period = overlay === 'announce' ? FLASH_FAST_MS : FLASH_SLOW_MS;
+  if (Date.now() - flashAt < period) return;
+  flashAt = Date.now();
+  flashOn = !flashOn;
+  paintScreen();
+}, 60);
+
+// Flash a receipt over the lot. The lot is already rendered underneath; it
+// appears when the announcement expires.
+//   ORDER IS IN   a task was just recorded onto a car
+//   ALL DONE!!    a task was just collected and the car is blank again
+function announce(msg) {
+  clearTimeout(orderInTimer);
+  announceMsg = msg;
+  overlay = 'announce';
+  flashOn = true;
+  flashAt = Date.now();
+  paintScreen();
+  orderInTimer = setTimeout(() => {
+    if (overlay !== 'announce') return;
+    overlay = null;
+    flashOn = true;
+    paintScreen();
+  }, ANNOUNCE_MS);
+}
+const announceOrderIn = () => announce('ORDER IS IN');
+const announceAllDone = () => announce('ALL DONE!!');
+
+function startOrder(n) {
+  if (ordering && ordering !== n) endOrder();   // one speaker, one car at a time
+  ordering = n;
+  leave(n, 'pulled up to the speaker');         // it is on the move, not parked
+  picked = null;
+  document.getElementById('carpick').value = String(n);
+  showPreview(null);
+  heard('listening…', true);
+  overlay = 'ordering';                         // "ORDER IN PROGRESS", flashing
+  flashOn = true;
+  flashAt = Date.now();
+  paintScreen();                                // NOW, not on the next flash tick —
+                                                // leave() above just painted the lot
+  log('SPEAKER  CAR ' + n + ' is ordering — say the task, then park it');
+  BRIDGE.order(n);
+  if (SR && !listening) startMic();
+  render();
+}
+
+// THE OTHER HALF OF THE SPEAKER. A car that already carries a task does not need
+// to order — it needs to be read back. Same reader, same lane, opposite job, and
+// the CAR is what decides which: blank key = ordering, loaded key = read-back.
+//
+// This is what a real drive-through speaker does. You order at it, and it reads
+// your order back to you before you pull forward.
+//
+// The read-back is the full description, not the 18-character version — the LCD
+// text is a label, the spoken text is the actual thing you said. It ends on the
+// nudge from condense.js: the first physical move, named out loud, because by the
+// time you have driven up to the speaker you are about to do the thing.
+function playBack(n) {
+  const t = task[n];
+  if (!t || !t.full) { startOrder(n); return; }   // blank key after all — order it
+
+  if (ordering) endOrder();                        // a read-back interrupts an order
+  leave(n, 'pulled up to the speaker');            // it is out of the lot while it plays
+  picked = null;
+  playing = n;
+  overlay = 'playing';
+
+  const said = CD.playback(t);
+  log('SPEAKER  CAR ' + n + ' playing back');
+  log('  "' + said + '"');
+  BRIDGE.play(n);
+  heard(said, true);
+  render();
+  printLot();                                      // -> the NOW PLAYING screen
+
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(said);
+    u.onend = () => endPlayback();
+    u.onerror = () => endPlayback();
+    window.speechSynthesis.speak(u);
+    // Belt and braces: some browsers never fire onend if the tab loses focus, and
+    // a screen stuck on NOW PLAYING in front of a room is worse than a short one.
+    setTimeout(() => { if (playing === n) endPlayback(); }, Math.max(4000, said.length * 90));
+  } else {
+    setTimeout(endPlayback, 2500);
+  }
+}
+
+function endPlayback() {
+  if (!playing) return;
+  playing = null;
+  if (overlay === 'playing') overlay = null;
+  BRIDGE.endplay();
+  printLot();
+  render();
+}
+
+// Called by park(). Returns the car whose order just closed, or null.
+function endOrder() {
+  if (!ordering) return null;
+  const n = ordering;
+  ordering = null;
+  if (overlay === 'ordering') overlay = null;
+  if (listening) stopMic();
+  return n;
+}
+
+// ---------------------------------------------------------------------------
+// the events the readers produce
+// ---------------------------------------------------------------------------
+function register(n) {
+  if (registered[n]) return;
+  registered[n] = true;
+  const car = CARS.find(c => c.n === n);
+  log('* NEW CAR registered -> CAR ' + n + '   UID ' + car.uid);
+}
+
+function park(space, n) {
+  register(n);
+
+  // ** PARKING IS THE STOP GESTURE. ** If this car was at the speaker, the order
+  // closes right here and whatever was heard becomes its task. Bind the text
+  // BEFORE the space is filled, so the row shows words the first time it is drawn
+  // instead of flashing "CAR n" and then correcting itself.
+  if (playing) endPlayback();                  // parking cuts a read-back short
+
+  // ** WAS A TASK ACTUALLY JUST RECORDED? ** The speaker only opens an order for
+  // a BLANK car, so "an order was open" IS the test for first-time. Moving an
+  // already-loaded car between spaces reorders silently, with no announcement.
+  const orderJustClosed = (ordering === n);
+  if (!orderJustClosed && overlay === 'ordering') overlay = null;
+  if (overlay === 'announce') overlay = null;   // a new move supersedes a receipt
+
+  if (ordering === n) {
+    endOrder();
+    if (draft && draft.full) {
+      log('ORDER CLOSED  CAR ' + n + ' — parked, so that is the order');
+      setTask(n, draft);
+      showPreview(null);
+      document.getElementById('typed').value = '';
+      heard('given to car ' + n, true);
+    } else {
+      log('ORDER CLOSED  CAR ' + n + ' — nothing heard; type it and it binds to this car');
+    }
+  } else if (ordering) {
+    endOrder();                                // someone else parked; order is off
+  }
+
+  if (occupant[space - 1] === n) {                       // already there
+    printLot();
+    if (orderJustClosed) announceOrderIn();
+    render();
+    return;
+  }
+
+  // A car can only be in one space. Releasing the old one is what makes moving
+  // a car REORDER the list instead of putting the same task on two lines.
+  for (let o = 0; o < NUM_SPACES; o++) {
+    if (occupant[o] === n) {
+      log('SPACE ' + (o + 1) + '  -> CAR ' + n + ' left');
+      occupant[o] = null;
+    }
+  }
+  // Whatever was in the target space gets bumped to the garage — on the real
+  // deck you'd have picked it up first; here the drop does it for you.
+  const bumped = occupant[space - 1];
+  if (bumped) {
+    log('SPACE ' + space + '  -> CAR ' + bumped + ' left');
+    occupant[space - 1] = null;
+  }
+
+  occupant[space - 1] = n;
+  doneCars[n] = false;
+  log('SPACE ' + space + '  <- CAR ' + n + ' parked');
+  BRIDGE.park(space, n);          // and move the real screen, if one is attached
+  printLot();                     // log + lotText, unconditionally
+  if (orderJustClosed) announceOrderIn();   // the glass says so first
+  render();
+}
+
+function leave(n, why) {
+  for (let o = 0; o < NUM_SPACES; o++) {
+    if (occupant[o] === n) {
+      log('SPACE ' + (o + 1) + '  -> CAR ' + n + ' left' + (why ? '   (' + why + ')' : ''));
+      occupant[o] = null;
+      BRIDGE.leave(o + 1);
+    }
+  }
+  printLot();
+  render();
+}
+
+function setTask(n, t) {
+  register(n);
+  task[n] = { full: t.full, lcd: t.lcd, due: t.due };
+  doneCars[n] = false;              // recording onto a car puts it back in service
+  delete completed[n];
+  log('TASK ' + n + ' ' + t.lcd);               // what the board echoes back
+  BRIDGE.task(n, t.lcd);                        // the real board gets the same line
+  printLot();
+  render();
+}
+
+// PLAYBACK IS CUT — decided 8/25. The drive-through used to read the task back;
+// now the same restaurant is THE SPEAKER, where you place the order instead. One
+// less step, one less thing to go wrong in front of a room, and it is what makes
+// parking the stop gesture. speak() is gone with it.
+//
+// ---------------------------------------------------------------------------
+// rendering the deck
+// ---------------------------------------------------------------------------
+function carEl(n) {
+  const car = CARS.find(c => c.n === n);
+  const el = document.createElement('div');
+  el.className = 'car' + (picked === n ? ' picked' : '') + (doneCars[n] ? ' done' : '');
+  el.style.background = car.color;
+  el.draggable = true;
+  el.dataset.car = n;
+  el.title = 'Car ' + n + ' — UID ' + car.uid;
+  el.innerHTML = '<div class="glass"></div><div class="glass2"></div><div class="n">' + n + '</div>';
+  el.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', String(n));
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  el.addEventListener('click', e => {
+    e.stopPropagation();
+    picked = (picked === n) ? null : n;
+    if (picked) document.getElementById('carpick').value = String(picked);
+    render();
+  });
+  return el;
+}
+
+function render() {
+  // spaces
+  const slots = document.getElementById('slots');
+  slots.innerHTML = '';
+  for (let s = 1; s <= NUM_SPACES; s++) {
+    const el = document.createElement('div');
+    el.className = 'slot';
+    el.dataset.space = s;
+    const rank = document.createElement('div');
+    rank.className = 'rank';
+    rank.textContent = s;
+    el.appendChild(rank);
+
+    const n = occupant[s - 1];
+    if (n) {
+      el.appendChild(carEl(n));
+      const lab = document.createElement('div');
+      lab.className = 'carlabel';
+      lab.innerHTML = 'Car ' + n + '<small>' +
+        (task[n] && task[n].lcd ? escapeHtml(task[n].lcd) : 'no task yet') + '</small>';
+      el.appendChild(lab);
+    } else {
+      const hint = document.createElement('div');
+      hint.className = 'hint';
+      hint.textContent = 'empty — reader on pin ' + ({1:44,2:45,3:40,4:41})[s];
+      el.appendChild(hint);
+    }
+    dropTarget(el, n => park(s, n));
+    slots.appendChild(el);
+  }
+
+  // garage: everything not parked
+  const garage = document.getElementById('garage');
+  garage.innerHTML = '';
+  const parked = occupant.filter(Boolean);
+  const loose = CARS.map(c => c.n).filter(n => parked.indexOf(n) < 0);
+  if (!loose.length) {
+    const hint = document.createElement('div');
+    hint.className = 'hint';
+    hint.textContent = 'every car is parked';
+    garage.appendChild(hint);
+  }
+  loose.forEach(n => {
+    const box = document.createElement('div');
+    box.style.textAlign = 'center';
+    box.appendChild(carEl(n));
+    const lab = document.createElement('div');
+    lab.className = 'carlabel';
+    lab.style.marginTop = '4px';
+    lab.textContent = doneCars[n] ? 'done' : 'car ' + n;
+    box.appendChild(lab);
+    garage.appendChild(box);
+  });
+
+  document.getElementById('chip-parked').textContent = parked.length + ' parked';
+  document.getElementById('chip-cars').textContent = Object.keys(registered).length + ' registered';
+  renderList();
+  renderPicker();
+}
+
+function escapeHtml(t) {
+  return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function renderList() {
+  const box = document.getElementById('tasklist');
+  box.innerHTML = CARS.map(c => {
+    const n = c.n;
+    const at = occupant.indexOf(n) + 1;
+    // A done car carries nothing, so show what it finished instead — struck
+    // through, so it's obvious the car itself is empty now.
+    const t = task[n] || completed[n];
+    const isDone = doneCars[n] && !task[n];
+    const where = at ? 'parked in space ' + at + ' — priority ' + at
+                     : (isDone ? 'driven out of the lot — car is blank again'
+                               : 'in the garage');
+    return '<div class="lineitem' + (isDone ? ' done' : '') + '">' +
+      '<span class="swatch" style="background:' + c.color + '"></span>' +
+      '<span class="what">Car ' + n + ' — ' + escapeHtml(t && t.full ? t.full : 'no task recorded yet') +
+      '<small>' + where + (t && t.due ? ' · due ' + escapeHtml(t.due) : '') +
+      (task[n] && task[n].lcd ? ' · LCD: ' + escapeHtml(task[n].lcd) : '') + '</small></span>' +
+      '<span class="tag">' + (at ? 'SPACE ' + at : (isDone ? 'done' : 'car ' + n)) + '</span></div>';
+  }).join('');
+}
+
+function renderPicker() {
+  const sel = document.getElementById('carpick');
+  const keep = sel.value;
+  sel.innerHTML = CARS.map(c => {
+    const at = occupant.indexOf(c.n) + 1;
+    const label = 'Car ' + c.n + (at ? ' — space ' + at : '') +
+      (task[c.n] && task[c.n].lcd ? ' — "' + task[c.n].lcd + '"' : '');
+    return '<option value="' + c.n + '">' + escapeHtml(label) + '</option>';
+  }).join('');
+  sel.value = picked ? String(picked) : (keep || '1');
+}
+
+// A drop target that also accepts "click a car, then click here".
+function dropTarget(el, handler) {
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('over');
+    const n = Number(e.dataTransfer.getData('text/plain'));
+    if (n) { picked = null; handler(n); }
+  });
+  el.addEventListener('click', () => {
+    if (picked) { const n = picked; picked = null; handler(n); }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// the pads
+// ---------------------------------------------------------------------------
+// THE SPEAKER — one reader, two jobs, and the CAR decides which.
+//   blank car  -> you are ordering. Recording starts; parking ends it.
+//   loaded car -> it reads your task back, in full, and names the first move.
+dropTarget(document.getElementById('pad-drive'),
+           n => (task[n] && task[n].full) ? playBack(n) : startOrder(n));
+
+// Driving out of the lot finishes the task, and finishing it takes it OFF the car.
+// The car is a key, not a container — once the task is done the key is blank and
+// ready to be recorded onto again. The completed text is kept for the list below,
+// not on the car.
+dropTarget(document.getElementById('pad-exit'), n => {
+  const had = !!(task[n] && task[n].full);   // did it actually carry something?
+  leave(n, 'left the lot');
+  doneCars[n] = true;
+  if (task[n]) { completed[n] = task[n]; delete task[n]; }
+  log('PICKUP LANE  CAR ' + n + ' — order collected, the car is blank again');
+  log('TASK ' + n);                 // the board echoes an empty label back
+  BRIDGE.done(n);                   // and the real board blanks the label too
+  if (playing) endPlayback();
+  printLot();                       // log + lotText, unconditionally
+  // A car that actually carried something gets a receipt. Collecting an empty
+  // car is just a car being carried around — no announcement for that.
+  if (had) announceAllDone();
+  render();
+});
+
+dropTarget(document.getElementById('pad-garage2'), n => { leave(n, 'back to the garage'); render(); });
+dropTarget(document.getElementById('garage'), n => { leave(n, 'back to the garage'); render(); });
+
+// ---------------------------------------------------------------------------
+// recording — identical to the live page, because it is the same code
+// ---------------------------------------------------------------------------
+function showPreview(t) {
+  draft = t;
+  const box = document.getElementById('preview');
+  if (!t || !t.full) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  document.getElementById('p-full').textContent = t.full;
+  document.getElementById('p-lcd').textContent = t.lcd;
+  document.getElementById('p-count').textContent = t.lcd.length + '/18 chars';
+  document.getElementById('p-due').textContent = t.due || '— not mentioned —';
+}
+
+function heard(text, idle) {
+  const el = document.getElementById('heard');
+  el.textContent = text;
+  el.className = 'heard' + (idle ? ' idle' : '');
+}
+
+function takeText(text) {
+  const t = (text || '').trim();
+  if (!t) { heard('nothing to work with', true); showPreview(null); return; }
+  heard(t);
+  showPreview(CD.condense(t));
+}
+
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog = null, listening = false;
+const micBtn = document.getElementById('mic');
+
+if (!SR) {
+  micBtn.disabled = true;
+  micBtn.textContent = 'No mic in this browser';
+} else {
+  recog = new SR();
+  recog.lang = 'en-US';
+  recog.interimResults = true;
+  recog.continuous = true;
+  recog.onresult = e => {
+    let text = '';
+    for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript;
+    heard(text);
+    showPreview(CD.condense(text));
+  };
+  recog.onerror = e => { heard('mic error: ' + e.error + ' — type it instead', true); stopMic(); };
+  recog.onend = () => { if (listening) stopMic(); };
+  micBtn.addEventListener('click', () => listening ? stopMic() : startMic());
+}
+
+function startMic() {
+  try { recog.start(); } catch (err) { heard('mic busy — try again', true); return; }
+  listening = true;
+  micBtn.textContent = 'Stop — listening…';
+  micBtn.classList.add('rec-on');
+  heard('listening…', true);
+}
+function stopMic() {
+  listening = false;
+  try { recog.stop(); } catch (err) { /* already stopped */ }
+  micBtn.textContent = 'Start recording';
+  micBtn.classList.remove('rec-on');
+}
+
+document.getElementById('usetext').addEventListener('click', () => takeText(document.getElementById('typed').value));
+document.getElementById('typed').addEventListener('input', e => { if (e.target.value.trim()) takeText(e.target.value); });
+
+document.getElementById('assign').addEventListener('click', () => {
+  if (!draft || !draft.full) { heard('record or type something first', true); return; }
+  const n = Number(document.getElementById('carpick').value);
+  setTask(n, draft);
+  heard('given to car ' + n, true);
+  showPreview(null);
+  document.getElementById('typed').value = '';
+});
+
+// ---------------------------------------------------------------------------
+// buttons
+// ---------------------------------------------------------------------------
+const EXAMPLES = [
+  'um I need to email the professor about the poster by Friday',
+  'remind me to charge the battery pack tonight',
+  "don't forget to print the reader coupon before class tomorrow",
+  'I gotta finish the lab report'
+];
+
+document.getElementById('connect').onclick = BRIDGE.connect;
+// Loads THREE, not four. The last car is deliberately left blank: it is the one
+// you order onto live in front of the room, and an order landing on an empty car
+// reads better than an order overwriting a task that was already there.
+document.getElementById('demo').addEventListener('click', () => {
+  CARS.slice(0, 3).forEach((c, i) => setTask(c.n, CD.condense(EXAMPLES[i])));
+  log('— three tasks loaded; car ' + CARS[CARS.length - 1].n + ' is blank, order onto it —');
+  render();
+});
+
+document.getElementById('clear').addEventListener('click', () => {
+  occupant = [null, null, null, null];
+  picked = null;
+  log('— lot cleared —');
+  printLot();
+  render();
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  occupant = [null, null, null, null];
+  task = {}; completed = {}; doneCars = {}; registered = {}; picked = null; draft = null;
+  document.getElementById('log').textContent = '— simulator ready, no board attached —\n';
+  document.getElementById('typed').value = '';
+  showPreview(null);
+  heard('nothing yet', true);
+  BRIDGE.clear();
+  printLot();
+  render();
+});
+
+// deselect when you click the background
+document.addEventListener('click', () => { if (picked) { picked = null; render(); } });
+
+render();
+printLot();
+</script>
+</body>
+</html>
