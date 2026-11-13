@@ -29,8 +29,9 @@ FQBN   := arduino:avr:mega:cpu=atmega2560
 
 test: test-python test-node test-firmware
 
+# PYTHONDONTWRITEBYTECODE: a test run leaves no __pycache__ folders in the tree.
 test-python:
-	cd $(VOICE) && $(PYTHON) -m unittest discover -s tests -t .
+	cd $(VOICE) && PYTHONDONTWRITEBYTECODE=1 $(PYTHON) -m unittest discover -s tests -t .
 
 test-node:
 	$(NODE) --test $(VOICE)/tests/*.test.js
