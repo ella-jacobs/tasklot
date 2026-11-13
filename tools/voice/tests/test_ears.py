@@ -368,6 +368,20 @@ class SideChannelTest(EarsTestCase):
         self.assertEqual(self.sent.sent, ["CAR 1 Email the Prof", "CAR 2 Call mom"])
         self.assertEqual(self.ears.lot.spaces, [None, None, None, None])
 
+    def test_reconnect_drops_the_open_order(self):
+        # A reset board has forgotten the order, so the mic must not stay open
+        # until the cap and then label the car.
+        self.make()
+        self.board("SPEAKER  CAR 3 ordering")
+        self.ears.on_reconnect()
+        self.assertIsNone(self.ears.lot.recording)
+        self.assertFalse(self.recorder.is_running())
+        self.clock.advance(120)
+        self.assertFalse(self.ears.check_cap())
+        self.assertEqual(self.ears.drain_jobs(), 0)
+        self.assertEqual(self.sent.sent, [])
+        self.assertIn("CAR 3's order dropped", self.log.text())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -8,8 +8,10 @@
     board --PICKUP CAR n collected--> Ears forgets the car
 
 Threads, and why:
-  * The main thread only reads the port and dispatches. It must keep draining,
-    or the OS buffer overflows and lines arrive truncated (a garbled LCD).
+  * The main thread reads the port and dispatches. It must keep draining, or
+    the OS buffer overflows and lines arrive truncated (a garbled LCD).
+    Stopping ffmpeg and sending a read-back's paced lines also happen here:
+    usually a second or two, up to about 8 s if ffmpeg has to be forced.
   * A worker thread transcribes and labels, which takes seconds.
   * A capper closes any order still open after MAX_RECORDING_S (E-08).
   * An inbox watcher handles the say/command side-channel files.
@@ -340,10 +342,16 @@ class Ears:
     def on_reconnect(self) -> None:
         """After the board resets it has forgotten every label (E-37): re-send
         the ones the laptop knows. Occupancy is cleared; the board reports
-        parked cars again as it re-detects them. Car numbers are assigned in the
-        order tags are first seen, so after a reset a physical car may get a
-        different number; firmware persistence (REMEMBER 1) is the real fix."""
+        parked cars again as it re-detects them. An order being recorded is
+        dropped, because the board has forgotten it too and no park will close
+        it. Car numbers are assigned in the order tags are first seen, so after
+        a reset a physical car may get a different number; firmware persistence
+        (REMEMBER 1) is the real fix."""
         with self._lock:
+            if self.lot.recording is not None:
+                self.log(f"[mic] CAR {self.lot.recording}'s order dropped -- the board reset")
+                self.recorder.discard()
+                self.lot.close_order()
             self.lot.spaces = [None] * len(self.lot.spaces)
             labels = sorted(self.lot.labels.items())
         for car, label in labels:
