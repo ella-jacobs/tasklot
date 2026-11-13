@@ -136,9 +136,7 @@ class Ears:
             elif isinstance(event, Collected):
                 self._on_collected(event.car)
             elif isinstance(event, TaskEcho):
-                # The board echoes what it stored; learning it lets a restarted
-                # daemon still read a car back (E-38).
-                self.lot.set_label(event.car, event.label)
+                self._on_task_echo(event.car, event.label)
 
     def _on_ordering(self, car: int) -> None:
         if self.lot.recording == car and self.recorder.is_running():
@@ -155,11 +153,20 @@ class Ears:
         self.recorder.start(car, order_id)
 
     def _on_parked(self, space: int, car: int) -> None:
-        self.lot.park(space, car)
         # Any park closes the order on the board, so it closes here too, and
-        # the recording belongs to the car that ordered, not the one that parked (E-11).
+        # the recording belongs to the car that ordered, not the one that parked
+        # (E-11). Closed first, so a bad space number cannot leave the mic open.
         if self.lot.recording is not None:
             self._finish_order()
+        self.lot.park(space, car)
+
+    def _on_task_echo(self, car: int, label: str) -> None:
+        # The board echoes what it stored; learning it lets a restarted daemon
+        # still read a car back (E-38). An empty echo (after DONE, or CAR n with
+        # no text) means the car is blank on the board, so its task is done.
+        self.lot.set_label(car, label)
+        if not label:
+            self.lot.tasks.pop(car, None)
 
     def _finish_order(self) -> None:
         """Close the open order and queue its recording for the worker."""

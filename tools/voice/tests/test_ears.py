@@ -88,6 +88,20 @@ class OrderFlowTest(EarsTestCase):
         self.board("TASK 4 Call mom", "TASK 4 ", "PLAYBACK CAR 4 reading back")
         self.assertEqual(self.sent.sent, [])
 
+    def test_empty_echo_after_done_forgets_full_text(self):
+        # DONE sent through the command file blanks the car on the board.
+        self.make()
+        self.board("SPEAKER  CAR 3 ordering", "SPACE 2  <- CAR 3 parked")
+        self.ears.drain_jobs()
+        self.board("TASK 3 Email the Prof", "TASK 3 ")
+        self.assertEqual(self.ears.lot.full_text(3), "")
+
+    def test_bad_space_still_closes_the_order(self):
+        self.make()
+        self.board("SPEAKER  CAR 3 ordering", "SPACE 9  <- CAR 3 parked")
+        self.assertIsNone(self.ears.lot.recording)
+        self.assertEqual(self.ears.drain_jobs(), 1)
+
     def test_pickup_forgets(self):
         self.make()
         self.board("SPEAKER  CAR 3 ordering", "SPACE 2  <- CAR 3 parked")

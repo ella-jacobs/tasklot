@@ -27,6 +27,7 @@ from .transcriber import FakeTranscriber, ScriptTranscriber, Transcriber, Transc
 EXIT_OK = 0
 EXIT_ERROR = 1
 EXIT_PORT = 2   # the serial port could not be opened (E-35, E-39)
+EXIT_INTERRUPTED = 130  # shell convention for Ctrl-C
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -157,6 +158,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except ConfigError as exc:
         print(f"config: {exc}", file=sys.stderr)
         return EXIT_ERROR
-    if args.command == "ears":
-        return run_ears(args, settings)
-    return run_voice(args, settings, args.help_parser)
+    try:
+        if args.command == "ears":
+            return run_ears(args, settings)
+        return run_voice(args, settings, args.help_parser)
+    except KeyboardInterrupt:
+        # Ctrl-C outside the daemon's read loop (e.g. while the board resets).
+        return EXIT_INTERRUPTED
