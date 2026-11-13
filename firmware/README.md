@@ -5,14 +5,21 @@ parking spaces, a speaker lane, a pickup lane), a 20 x 4 character LCD, and a li
 serial protocol to the laptop. The board never handles audio; it maps sticker UIDs to car
 numbers, car numbers to 18-character labels, and shows the lot.
 
-This file records how the sketch behaves, so the object-oriented refactor can be checked
-against it, and lists the hardware checks that cannot be automated. The protocol and the
-system-wide edge cases are specified in [`../DESIGN.md`](../DESIGN.md) (sections 3 and 5);
-this file is the firmware-side view of the same thing.
+> **Status: the object-oriented refactor compiles and passes the host tests; it has not
+> yet been re-tested on hardware.** Flash it and run the
+> [manual hardware test checklist](#manual-hardware-test-checklist) before relying on it.
+> The last bench-tested version is the monolithic sketch in the git history (commit
+> "Import firmware: v2 board sketch and the sketches that led to it").
+
+This file describes how the sketch is built, how it behaves (recorded before the refactor,
+so the refactor could be checked against it), how it is tested, and the hardware checks
+that cannot be automated. The protocol and the system-wide edge cases are specified in
+[`../DESIGN.md`](../DESIGN.md) (sections 3 and 5); this file is the firmware-side view.
 
 | Path | What |
 |---|---|
-| `tasklot_full_v2/` | The current sketch. |
+| `tasklot_full_v2/` | The current sketch, split into classes (see Architecture). |
+| `tests/` | Host-side tests: fake Arduino libraries, unit tests, scripted scenarios, golden transcripts. |
 | `history/` | The earlier sketches that built up to v2 (see its README). |
 
 ## Build and flash
@@ -32,6 +39,53 @@ arduino-cli upload  --fqbn arduino:avr:mega:cpu=atmega2560 -p <port> firmware/ta
 
 Serial monitor: 9600 baud. Only one program can hold the port, so close the monitor
 before running the laptop daemon or the simulator.
+
+The two feature switches (below) are `#define`s in `config.h`. They can also be set from
+the command line without editing the file, for example:
+
+```bash
+arduino-cli compile --fqbn arduino:avr:mega:cpu=atmega2560 \
+  --build-property "compiler.cpp.extra_flags=-DREMEMBER=1" firmware/tasklot_full_v2
+```
+
+## Architecture
+
+Arduino compiles every `.h` / `.cpp` in the sketch folder together with the `.ino`, so the
+split needs no build setup. All objects are globals of fixed size, built in
+`tasklot_full_v2.ino`; nothing is allocated at run time.
+
+```
+RfidSlot x6 --UIDs--> TaskLot --labels------> CarRegistry  (EEPROM if REMEMBER)
+                        |  \---occupancy---> ParkingLot
+                        |  \---lane passes-> LaneDebouncer x2
+                        |  \---events------> SerialProtocol --USB--> laptop
+                        \-----screens-----> LcdView ----I2C--> LCD
+                                               ^ reads OrderState, ReadbackText, CarRegistry
+```
+
+| File | Class / role | Hardware? |
+|---|---|---|
+| `tasklot_full_v2.ino` | Builds the objects; `setup()` and `loop()` (five lines: commands, spaces, lanes, `delay(60)`, screen tick). | - |
+| `config.h` | Every pin, size, timing constant and feature switch. | - |
+| `timing.h` | `elapsedMs()` / `deadlineReached()`: `millis()` arithmetic that survives the 32-bit wrap. | no |
+| `TaskLot` | The coordinator: what each read and each command does (the state machine below). Owns `OrderState`. | via the others |
+| `RfidSlot` | One RC522. `readArrival()` and `isStillPresent()` keep the bench-verified MFRC522 call sequences exactly; `classifyReaderVersion()` for the boot check. | MFRC522 |
+| `Uid` | A tag UID; `isPlausible()` rejects partial reads. | no |
+| `CarRegistry` | UID -> car index -> label, and the EEPROM layout. | EEPROM (REMEMBER 1) |
+| `ParkingLot` | Which car is on each space; presence timeout; renders a lot line. | no |
+| `LaneDebouncer` | One event per sweep on a lane. | no |
+| `ReadbackText` | Collects `FULL` chunks and word-wraps them into LCD rows. | no |
+| `LcdView` | The only code that draws: lot, overlays, flashing, paging, row diffing. Non-blocking. | LiquidCrystal_I2C |
+| `SerialProtocol` | Reads command lines, parses them into `Command` values, prints every event string. | Serial |
+
+Why this shape: the classes follow the state that really exists on the board (the car
+registry, the four spaces, the lane debounce, the screen, the serial line), and the logic
+that decides things (`ParkingLot`, `LaneDebouncer`, `ReadbackText`, `CarRegistry`,
+`SerialProtocol::parse`) has no hardware calls, so it builds and is tested on a laptop.
+`TaskLot` is the one place where reads turn into events, so the order of serial lines is
+easy to check against the original. `LcdView` reads `OrderState` instead of keeping its
+own copy, so the screen and the interaction can never disagree about which car is
+ordering or being read back.
 
 ## Pin map
 
@@ -56,8 +110,8 @@ no tag reads (the RF field does).
 ## Behaviour of the sketch (recorded before the refactor)
 
 Everything in this section describes the monolithic `tasklot_full_v2.ino` as imported. The
-refactor keeps all of it, byte for byte on the serial line, except where "Changes in the
-refactor" below says otherwise.
+refactor keeps all of it, byte for byte on the serial line; the one deliberate change is
+quirk 2 in the table at the end of this section (a screen-only fix).
 
 ### Compile-time switches
 
@@ -164,29 +218,73 @@ Laptop to board (matched by prefix in this order, so `LOTS` acts as `LOT`): `PIN
 (including a non-number, which reads as 0) prints `* bad car number:`. The effect of each
 command is in `DESIGN.md` section 3.2.
 
-### Memory baseline
+### Memory use, before and after the refactor
 
-Compiled with arduino-cli 1.x, core `arduino:avr` 1.8.8, `REMEMBER 0`, `USE_PRESENCE 1`:
+Compiled with arduino-cli, core `arduino:avr` 1.8.8, MFRC522 1.4.12, LiquidCrystal I2C
+1.1.2, for the Mega 2560 (253952 bytes of flash, 8192 bytes of SRAM):
 
-| Build | Flash | Static RAM |
+| Build | Flash before | Flash after | Static RAM before | Static RAM after |
+|---|---|---|---|---|
+| Default (`REMEMBER 0`, `USE_PRESENCE 1`) | 15084 | 16006 (+922, 6 %) | 1565 | 1561 (19 %) |
+| `REMEMBER 1` | 15874 | 16832 (+958, 6 %) | 1565 | 1561 |
+| `USE_PRESENCE 0` | 14758 | 15744 (+986, 6 %) | 1549 | 1561 |
+
+The extra flash is the cost of passing objects by reference and of the event methods
+that used to be inlined `Serial.print` runs; it is under 0.4 % of the Mega's flash. Static
+RAM is the same within a few bytes: the classes hold exactly the arrays the globals held,
+and all serial strings stay in flash (`F()`) as before. (With `USE_PRESENCE 0` the
+original let the compiler drop the unused presence timestamps; the refactor keeps them in
+`ParkingLot`, 12 bytes more.)
+
+### Known quirks in the original, and what the refactor did with each
+
+Recorded so each one is kept or fixed deliberately. "Kept" means the refactor reproduces
+it byte for byte (the golden transcripts pin it); changing it is a one-line decision for
+later.
+
+| # | Quirk | Refactor |
 |---|---|---|
-| Monolithic sketch (before the refactor) | 15084 bytes (5 %) | 1565 bytes (19 %) |
+| 1 | An implausible UID prints `* ignored a bad read (truncated UID): ...`, a blank line, then `  no car slots left - reset the board to clear`, because every failed registration was reported as "slots full". The laptop parses neither line. | Kept (`TaskLot::identify`). |
+| 2 | `DONE <n>` cleared the order and the read-back but left their screens up when the car had no label: the LCD kept flashing `ORDER IN PROGRESS` with `CAR 0`, or a read-back with no text read the label of car index -1 (out of bounds). | **Fixed** in its own commit: DONE now closes those screens. Serial output is unchanged. |
+| 3 | The header comment said there is no read-back step (the code has one) and had the lane pins swapped relative to the code. | Fixed (comments only). |
+| 4 | `confirmedTwice()` and its buffer were dead code. | Removed. |
+| 5 | **A fast swap is invisible.** Presence pings (`WakeupA`) do not check which tag answered, so if two cars swap spaces and both land within `GONE_MS` (1.2 s), the board keeps the old assignment and the lot shows the labels on the wrong lines. A slow swap (lift both, wait, set down) works. `DESIGN.md` E-27 assumes the arrival rule catches this; it does not. | Kept. A fix would re-read the UID on a presence ping, which changes the bench-verified call sequence, so it needs hardware testing first. |
+| 6 | Collecting a different car while one is ordering drops the `ORDER IN PROGRESS` screen, but the order stays open (the laptop keeps recording); `ORDER IS IN` still flashes when the ordering car parks. | Kept. |
+| 7 | `PLAY <n>` does not set a timeout but keeps any earlier one: after a speaker read-back or `FULLSHOW` that was ended early by `LOT`, a later `PLAY` ends at the old deadline (or on the next loop, if that deadline has passed). | Kept. Related to `DESIGN.md` open question 9.2. |
 
-### Known quirks in the original
+## Tests
 
-These are recorded so the refactor can keep them deliberately (or fix them deliberately).
+```bash
+firmware/tests/run_tests.sh                                            # host tests, needs only a C++17 compiler
+arduino-cli compile --fqbn arduino:avr:mega:cpu=atmega2560 firmware/tasklot_full_v2   # compile check for the board
+make -C firmware check                                                 # both, plus the REMEMBER / USE_PRESENCE builds
+```
 
-1. An implausible UID prints `* ignored a bad read (truncated UID): ...`, then a blank
-   line, then `  no car slots left - reset the board to clear`, because the caller treats
-   every failed registration as "slots full". The laptop does not parse either line.
-2. `DONE <n>` clears `ordering` and `playing` but does not drop the `ORDERING` or `PLAYING`
-   overlay when the car had no label. The screen then keeps flashing `ORDER IN PROGRESS`
-   with `CAR 0`, or (read-back with no text received) reads the label of car index -1,
-   which is out of bounds.
-3. The header comment said there is no read-back step; the code has one (labelled car at
-   the speaker). The header also had the lane pins swapped relative to the code.
-4. `confirmedTwice()` and its buffer were dead code (a "see a new UID twice" rule that was
-   reverted).
+`run_tests.sh` builds the sketch sources with the system compiler against small fakes of
+the Arduino core, SPI, Wire, EEPROM, MFRC522 and LiquidCrystal_I2C (`tests/fakes/`). The
+fake RC522 models the tag states the firmware relies on: a tag answers `REQA` until it is
+halted, a halted tag answers only `WUPA`, and taking it out of the field resets it.
+
+1. **Unit tests** (`tests/unit_tests.cpp`, 175 checks) exercise each class directly: partial
+   UID reads (E-29), the ninth car (E-25), moves and presence timeouts (E-26, E-28), lane
+   debounce (E-09), read-back wrap limits (E-16), command parsing and bad car numbers
+   (E-34), exact event strings, the LCD overlays and paging, a missing LCD (E-40), and
+   every timer across the `millis()` wrap (E-42).
+2. **Scenarios** (`tests/scenarios.cpp`) run the whole sketch (`setup()` and `loop()`)
+   through 14 scripted sessions (boot, degraded boot, park and leave, move and swap,
+   ordering, read-back, pickup, every command, a full registry, `USE_PRESENCE 0`, and
+   three `REMEMBER 1` power cycles), and record every serial byte and the LCD after each
+   step. The transcripts in `tests/golden/` were recorded from the monolithic sketch
+   before the refactor; the refactor reproduces all 14 byte for byte, except the one
+   deliberate change (quirk 2), which is its own commit with its own golden diff.
+
+To re-record the golden files after an intended behaviour change, run
+`firmware/tests/run_tests.sh --regen firmware/tasklot_full_v2` (needs `arduino-cli`) and
+review the diff.
+
+What the host tests cannot show: real RF behaviour (read range, collisions, the starved
+3.3 V rail), I2C timing, and serial pacing on a real 64-byte buffer. That is what the
+checklist below is for.
 
 ## Manual hardware test checklist
 
@@ -209,7 +307,8 @@ baud, and the LCD connected. Each line is a pass/fail check. The `E-` numbers re
 
 **Car moved and swapped**
 - [ ] Move a car from space 1 straight to space 2: `SPACE 1  -> CAR n left` then `SPACE 2  <- CAR n parked`; the label appears once, on line 2. (E-26)
-- [ ] Swap the cars on spaces 1 and 2 by hand: final lot shows them swapped, each label once. (E-27)
+- [ ] Swap the cars on spaces 1 and 2 slowly (lift both, wait two seconds, set them down swapped): final lot shows them swapped, each label once. (E-27)
+- [ ] Swap them quickly (both down within a second): expect the lot NOT to change (quirk 5). Note what you see.
 
 **Ordering (speaker lane)**
 - [ ] Pass a blank car over the speaker: `SPEAKER  CAR n ordering`; the LCD flashes `ORDER IN PROGRESS` about twice a second with `CAR n`, `listening...`, `park it when done`.
@@ -227,6 +326,7 @@ baud, and the LCD connected. Each line is a pass/fail check. The `E-` numbers re
 - [ ] Pass a labelled, parked car through the pickup lane: `PICKUP   CAR n collected`, `TASK n `, `SPACE s  -> CAR n left`, `ALL DONE!!` flashes, then the lot with the space empty.
 - [ ] Pass a blank car through the pickup lane: same lines, but no `ALL DONE!!`.
 - [ ] Order with a blank car, then carry it straight to the pickup lane: `ORDER IN PROGRESS` stops. (E-12, board side)
+- [ ] Order with a blank car, then send `DONE n` for it from the monitor: the screen goes back to the lot (quirk 2 fix; it used to stay on `ORDER IN PROGRESS` with `CAR 0`).
 
 **All slots full**
 - [ ] Put a car on each of the four spaces and pass a fifth over each lane: every read still registers; no missed `parked` lines over a few minutes. (E-24, 3.3 V rail)
