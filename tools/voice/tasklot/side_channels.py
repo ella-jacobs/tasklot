@@ -1,11 +1,12 @@
 """Side channels into the running daemon: spoken lines and board commands.
 
 Only one program can hold the serial port, so while the daemon runs, nothing
-else can talk to the board. Two watched files fill that gap:
+else can talk to the board. Two watched files fill that gap. By default they
+live in the per-user temp directory (see config.py), which on macOS is $TMPDIR:
 
-    echo "Drive up when you are ready" > /tmp/tasklot_say.txt   # spoken aloud
-    echo CLEAR > /tmp/tasklot_cmd.txt                            # sent to the board
-    echo RESET > /tmp/tasklot_cmd.txt                            # wipe laptop + board
+    echo "Drive up when you are ready" > "$TMPDIR/tasklot_say.txt"   # spoken aloud
+    echo CLEAR > "$TMPDIR/tasklot_cmd.txt"                            # sent to the board
+    echo RESET > "$TMPDIR/tasklot_cmd.txt"                            # wipe laptop + board
 
 FileInbox watches one file by modification time; SayVoice wraps macOS `say`
 with the best installed voice. (It is named for what it does: in the rest of
@@ -13,6 +14,7 @@ the project "the speaker" is the RFID reader in the ordering lane.) Paths come f
 """
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 from typing import Callable, Optional
@@ -25,6 +27,7 @@ from .logs import LogFn, log as default_log
 VOICE_PREFERENCES = ("Ava (Premium)", "Zoe (Premium)", "Evan (Premium)",
                      "Allison (Premium)", "Samantha (Enhanced)", "Ava (Enhanced)", "Samantha")
 VOICE_LIST_TIMEOUT_S = 10
+OWNER_ONLY = 0o600     # inbox files: read and write for the user only
 
 
 class FileInbox:
@@ -40,10 +43,14 @@ class FileInbox:
 
     def reset(self) -> None:
         """Blank the file and remember its mtime, so a restart does not replay
-        whatever was written last time (E-43). Errors are ignored: the inbox
-        then simply reports the next write."""
+        whatever was written last time (E-43). A new file is created owner-only,
+        and a symlink planted at the path is never followed, so reset cannot
+        truncate some other file. Errors are ignored: the inbox then simply
+        reports the next write."""
         try:
-            self.path.write_text("")
+            fd = os.open(self.path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW,
+                         OWNER_ONLY)
+            os.close(fd)
             self._last_mtime = self.path.stat().st_mtime
         except OSError:
             self._last_mtime = 0.0

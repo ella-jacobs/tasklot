@@ -3,7 +3,8 @@
 Values come from environment variables so the daemon runs on any machine without
 editing code; the CLI can override some of them with flags. Nothing here holds a
 personal path: defaults are the macOS serial device name, a model path under the
-current user's home, and /tmp for scratch files.
+current user's home, and the per-user temp directory ($TMPDIR, shown as <tmp>)
+for scratch files.
 
 | Variable                 | Default                               | Meaning                               |
 |--------------------------|---------------------------------------|---------------------------------------|
@@ -17,15 +18,16 @@ current user's home, and /tmp for scratch files.
 | TASKLOT_LLM_TIMEOUT      | 25                                    | s before the LLM is abandoned         |
 | TASKLOT_VOICE            | (best installed)                      | macOS `say` voice                     |
 | TASKLOT_RATE             | 180                                   | `say` words per minute                |
-| TASKLOT_REC_DIR          | /tmp                                  | where order recordings are written    |
-| TASKLOT_SAY_FILE         | /tmp/tasklot_say.txt                  | text written here is spoken           |
-| TASKLOT_CMD_FILE         | /tmp/tasklot_cmd.txt                  | a board command written here is sent  |
+| TASKLOT_REC_DIR          | <tmp>                                 | where order recordings are written    |
+| TASKLOT_SAY_FILE         | <tmp>/tasklot_say.txt                 | text written here is spoken           |
+| TASKLOT_CMD_FILE         | <tmp>/tasklot_cmd.txt                 | a board command written here is sent  |
 | TASKLOT_TASKS_FILE       | tools/voice/tasks.json                | offline CLI task store                |
 | TASKLOT_FAKE_TRANSCRIPT  | (unset)                               | skip mic + whisper, use this text     |
 """
 from __future__ import annotations
 
 import os
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Mapping, Optional
@@ -63,7 +65,11 @@ DEFAULT_MIC = ":0"                 # avfoundation's default audio input
 DEFAULT_WHISPER_BIN = "whisper-cli"
 DEFAULT_MODEL = "~/.whisper-models/ggml-base.en.bin"
 DEFAULT_SAY_RATE = "180"           # words per minute; a string because it goes on argv
-DEFAULT_TMP = Path("/tmp")
+# Scratch files (recordings, the say and command files) go in the per-user temp
+# directory. On macOS, the only platform the daemon runs on (avfoundation and
+# `say`), that is $TMPDIR: a 0700 folder no other account can read recordings
+# from, plant symlinks in, or write board commands to, unlike the shared /tmp.
+DEFAULT_TMP = Path(tempfile.gettempdir())
 DEFAULT_SAY_FILE = DEFAULT_TMP / "tasklot_say.txt"
 DEFAULT_CMD_FILE = DEFAULT_TMP / "tasklot_cmd.txt"
 

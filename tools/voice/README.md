@@ -33,12 +33,14 @@ The same commands are available as `python3 -m tasklot ears` and `python3 -m tas
 `tasklot_voice.py` keeps its original flags: audio files, `--text`, `--latest-memo`,
 `--watch DIR`, `--car N`, `--push --port PORT`, `--clear`.
 
-While the daemon holds the port, two files act as side channels (paths configurable):
+While the daemon holds the port, two files act as side channels. They live in the
+per-user temp directory (`$TMPDIR` on macOS, private to your account), the daemon
+prints both paths at startup, and `TASKLOT_SAY_FILE` / `TASKLOT_CMD_FILE` move them:
 
 ```bash
-echo "Drive up when you are ready" > /tmp/tasklot_say.txt   # spoken with macOS say
-echo CLEAR > /tmp/tasklot_cmd.txt                            # sent to the board
-echo RESET > /tmp/tasklot_cmd.txt                            # forget every task, laptop and board
+echo "Drive up when you are ready" > "$TMPDIR/tasklot_say.txt"   # spoken with macOS say
+echo CLEAR > "$TMPDIR/tasklot_cmd.txt"                            # sent to the board
+echo RESET > "$TMPDIR/tasklot_cmd.txt"                            # forget every task, laptop and board
 ```
 
 Configuration is by environment variable; the full table is at the top of

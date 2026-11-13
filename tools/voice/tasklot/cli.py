@@ -110,6 +110,7 @@ def run_ears(args: argparse.Namespace, settings: Settings) -> int:
     ears.startup_report()
     ears.start_background_threads()
     log(f"[ears] attached to {settings.port}. Drive a car past the speaker to order.")
+    log(f"[ears] say file: {settings.say_file}   command file: {settings.cmd_file}")
     install_sigterm_handler()
     try:
         ears.run(link.readline)

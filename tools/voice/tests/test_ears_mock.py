@@ -5,7 +5,7 @@ the board's exact serial lines into the other end, and checks the bytes the
 daemon writes back. Transcription is faked with TASKLOT_FAKE_TRANSCRIPT and the
 LLM is turned off, so no microphone, model, or network is involved. The daemon's
 side-channel files and recordings go to a temporary directory, so the test never
-touches the real /tmp/tasklot_* files a running daemon would use.
+touches the tasklot_* files a real running daemon would use.
 
 Skipped (not failed) when pyserial is not installed, because the daemon needs it
 to open the port.

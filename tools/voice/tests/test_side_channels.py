@@ -2,11 +2,15 @@
 
 `say` is never run: every test injects fake run/popen callables.
 """
+import os
+import stat
 import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 from tasklot.logs import LogCapture
-from tasklot.side_channels import VOICE_PREFERENCES, SayVoice
+from tasklot.side_channels import VOICE_PREFERENCES, FileInbox, SayVoice
 
 # What `say -v ?` prints: one voice per line, name first.
 INSTALLED = """Albert              en_US    # Hello! My name is Albert.
@@ -85,6 +89,37 @@ class SpeakTest(unittest.TestCase):
         log = LogCapture()
         SayVoice(popen=Popen(exc=FileNotFoundError("say")), log=log).speak("hello")
         self.assertIn("[say] failed", log.text())
+
+
+class FileInboxResetTest(unittest.TestCase):
+    """reset() blanks the inbox file without ever following a symlink."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_creates_an_owner_only_file(self):
+        inbox = FileInbox(self.dir / "cmd.txt")
+        inbox.reset()
+        mode = stat.S_IMODE(os.stat(self.dir / "cmd.txt").st_mode)
+        self.assertEqual(mode & 0o077, 0)  # no group or other access
+
+    def test_blanks_existing_content(self):
+        (self.dir / "cmd.txt").write_text("RESET\n")
+        inbox = FileInbox(self.dir / "cmd.txt")
+        inbox.reset()
+        self.assertEqual((self.dir / "cmd.txt").read_text(), "")
+        self.assertIsNone(inbox.poll())
+
+    def test_planted_symlink_is_not_followed(self):
+        target = self.dir / "precious.txt"
+        target.write_text("keep me")
+        (self.dir / "cmd.txt").symlink_to(target)
+        FileInbox(self.dir / "cmd.txt").reset()
+        self.assertEqual(target.read_text(), "keep me")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 """Tests for Settings.from_env: defaults, overrides, and malformed values."""
 import os
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -18,7 +19,11 @@ class SettingsTest(unittest.TestCase):
         self.assertTrue(s.llm_enabled)
         self.assertEqual(s.llm_timeout, LLM_TIMEOUT_S)
         self.assertEqual(s.whisper_model, os.path.expanduser("~/.whisper-models/ggml-base.en.bin"))
-        self.assertEqual(s.cmd_file, Path("/tmp/tasklot_cmd.txt"))
+        # Scratch files go in the per-user temp directory, not the shared /tmp.
+        private = Path(tempfile.gettempdir())
+        self.assertEqual(s.rec_dir, private)
+        self.assertEqual(s.say_file, private / "tasklot_say.txt")
+        self.assertEqual(s.cmd_file, private / "tasklot_cmd.txt")
         self.assertEqual(s.tasks_file, VOICE_DIR / "tasks.json")
 
     def test_overrides(self):
