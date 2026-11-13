@@ -8,6 +8,7 @@ serial. See DESIGN.md at the repo root for the protocol and the edge cases.
 Modules, in pipeline order:
 
     config        Settings from environment variables
+    logs          the one logging helper (and test captures)
     protocol      board events (parse_line) and command formatters
     serial_link   SerialLink: paced writes, reconnect
     recorder      Recorder: ffmpeg microphone capture
@@ -17,6 +18,8 @@ Modules, in pipeline order:
     labeler       Labeler: optional LLM label with hallucination guards
     task, lot     Task and Lot: the laptop's model of the cars
     ears          Ears: the live daemon that wires everything together
+    side_channels FileInbox (say/command files) and Speaker (macOS `say`)
+    offline       OfflineTool: memo or text -> tasks.json -> optional push
     cli           `python3 -m tasklot ears|voice`
 
 Run from tools/voice:  python3 -m tasklot --help

@@ -22,9 +22,8 @@ import subprocess
 from typing import Callable, Optional
 
 from .condenser import LCD_TEXT, ascii_only
+from .config import LLM_TIMEOUT_S
 from .logs import LogFn, log as default_log
-
-DEFAULT_TIMEOUT_S = 25.0
 
 # Below this many content words the model has nothing to compress and invents
 # instead: "Paper" came back as PAPER DUE TONIGHT, "A lot" as A LOT SORRY. The
@@ -186,7 +185,7 @@ class Labeler:
     """
 
     def __init__(self, runner: Runner = claude_cli_runner, enabled: bool = True,
-                 timeout: float = DEFAULT_TIMEOUT_S, width: int = LCD_TEXT,
+                 timeout: float = LLM_TIMEOUT_S, width: int = LCD_TEXT,
                  log: LogFn = default_log):
         self.runner = runner
         self.enabled = enabled

@@ -12,14 +12,15 @@ condense.js changes:
 tests/test_condenser.py runs --check, so a stale page fails the tests instead of
 quietly showing different words in the simulator than on the LCD.
 """
-import os
-import sys
+from __future__ import annotations
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, "condense.js")
-PAGES = [
-    os.path.join(os.path.dirname(HERE), "sim", "tasklot-sim.html"),
-]
+import sys
+from pathlib import Path
+from typing import Optional, Sequence
+
+HERE = Path(__file__).resolve().parent
+SRC = HERE / "condense.js"
+PAGES = [HERE.parent / "sim" / "tasklot-sim.html"]
 BEGIN = "/* ===== BEGIN condense.js ===== */"
 END = "/* ===== END condense.js ===== */"
 
@@ -28,7 +29,7 @@ EXIT_STALE = 1
 EXIT_NO_MARKERS = 2
 
 
-def sync_one(path, src, check):
+def sync_one(path: Path, src: str, check: bool) -> int:
     """Refresh (or just check) the inlined copy in one page.
 
     Args:
@@ -43,39 +44,36 @@ def sync_one(path, src, check):
     Side effects:
         Rewrites the page when it is stale and check is False; prints one line.
     """
-    name = os.path.basename(path)
-    if not os.path.exists(path):
-        print("%s: not found - skipped" % name)
+    name = path.name
+    if not path.exists():
+        print(f"{name}: not found - skipped")
         return EXIT_CURRENT
 
-    with open(path, encoding="utf-8") as f:
-        page = f.read()
+    page = path.read_text(encoding="utf-8")
     a = page.find(BEGIN)
     b = page.find(END)
     if a < 0 or b < 0:
-        print("%s: markers missing - add %s / %s around the inlined copy" % (name, BEGIN, END))
+        print(f"{name}: markers missing - add {BEGIN} / {END} around the inlined copy")
         return EXIT_NO_MARKERS
 
     if page[a + len(BEGIN):b].strip("\n") == src:
-        print("%s: condense.js copy is current" % name)
+        print(f"{name}: condense.js copy is current")
         return EXIT_CURRENT
     if check:
-        print("STALE: %s carries an old copy of condense.js. Run: python3 tools/voice/sync_page.py" % name)
+        print(f"STALE: {name} carries an old copy of condense.js. Run: python3 tools/voice/sync_page.py")
         return EXIT_STALE
 
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(page[:a + len(BEGIN)] + "\n" + src + "\n" + page[b:])
-    print("%s: re-inlined condense.js" % name)
+    path.write_text(page[:a + len(BEGIN)] + "\n" + src + "\n" + page[b:], encoding="utf-8")
+    print(f"{name}: re-inlined condense.js")
     return EXIT_CURRENT
 
 
-def main(argv=None):
+def main(argv: Optional[Sequence[str]] = None) -> int:
     """Sync every page; returns the worst status as the exit code."""
     argv = sys.argv[1:] if argv is None else argv
     check = "--check" in argv
-    with open(SRC, encoding="utf-8") as f:
-        src = f.read().rstrip("\n")
-    return max(sync_one(p, src, check) for p in PAGES)
+    src = SRC.read_text(encoding="utf-8").rstrip("\n")
+    return max(sync_one(page, src, check) for page in PAGES)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,14 @@
 """Transcribers: audio file -> text, all local.
 
-Transcriber      whisper.cpp's `whisper-cli`, used by the live daemon. Never
-                 raises: a missing binary, a hang, or a bad file gives "" and a
-                 log line, because the daemon must keep running (E-01, E-06, E-07).
+Transcriber        whisper.cpp's `whisper-cli`, used by the live daemon. Never
+                   raises: a missing binary, a hang, or a bad file gives "" and a
+                   log line, because the daemon must keep running (E-01, E-06, E-07).
 ScriptTranscriber  an external script named by TASKLOT_WHISPER_SCRIPT that takes
-                 an audio path and prints the transcript; used by the offline
-                 `voice` CLI for phone recordings. Raises on failure, because the
-                 CLI should stop and say why.
-FakeTranscriber  returns fixed text; replaces the mic and model in tests and in
-                 the end-to-end test (TASKLOT_FAKE_TRANSCRIPT).
+                   an audio path and prints the transcript; used by the offline
+                   `voice` CLI for phone recordings. Raises on failure, because the
+                   CLI should stop and say why.
+FakeTranscriber    returns fixed text; replaces the mic and model in tests and in
+                   the end-to-end test (TASKLOT_FAKE_TRANSCRIPT).
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 from typing import Callable
 
-from .config import WHISPER_TIMEOUT_S
+from .config import DEFAULT_WHISPER_BIN, WHISPER_TIMEOUT_S
 from .logs import LogFn, log as default_log
 
 # A 16 kHz mono WAV header is 44 bytes; under this size the recording holds
@@ -50,7 +50,7 @@ class Transcriber:
         log: logging callable.
     """
 
-    def __init__(self, binary: str = "whisper-cli", model: str = "", *,
+    def __init__(self, binary: str = DEFAULT_WHISPER_BIN, model: str = "", *,
                  timeout: float = WHISPER_TIMEOUT_S, runner: Runner = subprocess.run,
                  which: Callable[[str], object] = shutil.which, log: LogFn = default_log):
         self.binary = binary

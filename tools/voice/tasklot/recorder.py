@@ -22,12 +22,12 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from .config import MIN_HOLD_S
+from .config import DEFAULT_MIC, MIN_HOLD_S
 from .logs import LogFn, log as default_log
 
 SAMPLE_RATE_HZ = 16000      # whisper.cpp expects 16 kHz mono
 STOP_GRACE_S = 3.0          # how long each polite stop step may take
-KILL_WAIT_S = 2.0
+KILL_WAIT_S = 2.0           # SIGKILL cannot be ignored; this only bounds reaping it
 
 ProcessFactory = Callable[..., "subprocess.Popen"]
 
@@ -49,7 +49,7 @@ class Recorder:
         log: logging callable.
     """
 
-    def __init__(self, rec_dir: Path, mic: str = ":0", *,
+    def __init__(self, rec_dir: Path, mic: str = DEFAULT_MIC, *,
                  process_factory: ProcessFactory = subprocess.Popen,
                  clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep,

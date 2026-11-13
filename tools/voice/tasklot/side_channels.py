@@ -16,6 +16,7 @@ import subprocess
 from pathlib import Path
 from typing import Callable, Optional
 
+from .config import DEFAULT_SAY_RATE
 from .logs import LogFn, log as default_log
 
 # `say` defaults to a robotic legacy voice; prefer a Premium/Enhanced one if
@@ -75,7 +76,7 @@ class Speaker:
         log: logging callable.
     """
 
-    def __init__(self, voice: Optional[str] = None, rate: str = "180", *,
+    def __init__(self, voice: Optional[str] = None, rate: str = DEFAULT_SAY_RATE, *,
                  popen: Callable = subprocess.Popen, run: Callable = subprocess.run,
                  log: LogFn = default_log):
         self.wanted = voice

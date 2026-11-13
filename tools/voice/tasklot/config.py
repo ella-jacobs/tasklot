@@ -54,11 +54,18 @@ MAX_RECORDING_S = 60.0
 MIN_HOLD_S = 0.6
 
 WHISPER_TIMEOUT_S = 90.0   # a hung whisper gives up and yields "" (E-07)
+# The LLM upgrade usually lands in about 8 s; past this the rule-based label,
+# already on the LCD, simply stays (E-22).
 LLM_TIMEOUT_S = 25.0
 
 DEFAULT_PORT = "/dev/cu.usbmodem101"
+DEFAULT_MIC = ":0"                 # avfoundation's default audio input
+DEFAULT_WHISPER_BIN = "whisper-cli"
 DEFAULT_MODEL = "~/.whisper-models/ggml-base.en.bin"
-DEFAULT_TMP = "/tmp"
+DEFAULT_SAY_RATE = "180"           # words per minute; a string because it goes on argv
+DEFAULT_TMP = Path("/tmp")
+DEFAULT_SAY_FILE = DEFAULT_TMP / "tasklot_say.txt"
+DEFAULT_CMD_FILE = DEFAULT_TMP / "tasklot_cmd.txt"
 
 
 class ConfigError(ValueError):
@@ -88,20 +95,20 @@ class Settings:
     baud: int = BAUD
     reset_delay: float = RESET_DELAY_S
     pacing: float = SEND_PACING_S
-    mic: str = ":0"
-    whisper_bin: str = "whisper-cli"
+    mic: str = DEFAULT_MIC
+    whisper_bin: str = DEFAULT_WHISPER_BIN
     whisper_model: str = DEFAULT_MODEL
     whisper_script: str = ""
     whisper_timeout: float = WHISPER_TIMEOUT_S
     llm_enabled: bool = True
     llm_timeout: float = LLM_TIMEOUT_S
     voice: Optional[str] = None
-    say_rate: str = "180"
+    say_rate: str = DEFAULT_SAY_RATE
     max_recording: float = MAX_RECORDING_S
     min_hold: float = MIN_HOLD_S
-    rec_dir: Path = Path(DEFAULT_TMP)
-    say_file: Path = Path(DEFAULT_TMP) / "tasklot_say.txt"
-    cmd_file: Path = Path(DEFAULT_TMP) / "tasklot_cmd.txt"
+    rec_dir: Path = DEFAULT_TMP
+    say_file: Path = DEFAULT_SAY_FILE
+    cmd_file: Path = DEFAULT_CMD_FILE
     tasks_file: Path = field(default_factory=lambda: VOICE_DIR / "tasks.json")
     fake_transcript: str = ""
 
@@ -119,21 +126,20 @@ class Settings:
             ConfigError: a numeric variable is malformed.
         """
         env = os.environ if env is None else env
-        tmp = env.get("TASKLOT_REC_DIR") or DEFAULT_TMP
         return cls(
             port=env.get("TASKLOT_PORT") or DEFAULT_PORT,
             reset_delay=_float(env, "TASKLOT_RESET_DELAY", RESET_DELAY_S),
-            mic=env.get("TASKLOT_MIC") or ":0",
-            whisper_bin=env.get("TASKLOT_WHISPER_BIN") or "whisper-cli",
+            mic=env.get("TASKLOT_MIC") or DEFAULT_MIC,
+            whisper_bin=env.get("TASKLOT_WHISPER_BIN") or DEFAULT_WHISPER_BIN,
             whisper_model=os.path.expanduser(env.get("TASKLOT_WHISPER_MODEL") or DEFAULT_MODEL),
             whisper_script=env.get("TASKLOT_WHISPER_SCRIPT", ""),
             llm_enabled=env.get("TASKLOT_LLM", "1") != "0",
             llm_timeout=_float(env, "TASKLOT_LLM_TIMEOUT", LLM_TIMEOUT_S),
             voice=env.get("TASKLOT_VOICE") or None,
-            say_rate=env.get("TASKLOT_RATE") or "180",
-            rec_dir=Path(tmp),
-            say_file=Path(env.get("TASKLOT_SAY_FILE") or Path(DEFAULT_TMP) / "tasklot_say.txt"),
-            cmd_file=Path(env.get("TASKLOT_CMD_FILE") or Path(DEFAULT_TMP) / "tasklot_cmd.txt"),
+            say_rate=env.get("TASKLOT_RATE") or DEFAULT_SAY_RATE,
+            rec_dir=Path(env.get("TASKLOT_REC_DIR") or DEFAULT_TMP),
+            say_file=Path(env.get("TASKLOT_SAY_FILE") or DEFAULT_SAY_FILE),
+            cmd_file=Path(env.get("TASKLOT_CMD_FILE") or DEFAULT_CMD_FILE),
             tasks_file=Path(env.get("TASKLOT_TASKS_FILE") or VOICE_DIR / "tasks.json"),
             fake_transcript=env.get("TASKLOT_FAKE_TRANSCRIPT", ""),
         )

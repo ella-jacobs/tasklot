@@ -17,6 +17,7 @@ from typing import Callable, Iterable, Optional, TextIO
 
 from .condenser import LCD_TEXT, Condenser
 from .config import BAUD, MAX_CARS, Settings
+from .logs import silent
 from .lot import Lot, LotFull
 from .protocol import LOT, car_command
 from .serial_link import SerialLink
@@ -214,6 +215,5 @@ class OfflineTool:
         """A paced SerialLink for --push that logs nothing: push() prints its own
         progress to stderr, matching the original tool's output."""
         return SerialLink(port, self.settings.baud, pacing=self.settings.pacing,
-                          reset_delay=self.settings.reset_delay,
-                          log=lambda message: None)
+                          reset_delay=self.settings.reset_delay, log=silent)
 
