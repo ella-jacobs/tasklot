@@ -23,6 +23,7 @@ never re-labelled.
 
 ```bash
 cd tools/voice
+python3 -m pip install -r requirements.txt   # pyserial, the only dependency
 python3 tasklot_ears.py                  # live daemon (needs pyserial, ffmpeg, whisper-cli)
 python3 tasklot_voice.py --text "remind me to charge the battery pack tonight" --car 1
 python3 condense.py "I need to email the professor by Friday"     # prints the JSON
@@ -71,6 +72,7 @@ if it adds a time, day, or number that was never said, and the rule-based label 
 | `cases.json` | Shared fixtures both condensers must pass. |
 | `sync_page.py` | Re-inlines `condense.js` into `tools/sim/tasklot-sim.html`; `--check` reports a stale copy. |
 | `tasklot_ears.py`, `tasklot_voice.py`, `condense.py` | The original commands, now thin entry points. |
+| `requirements.txt` | `pyserial`, pinned: needed only to open the serial port. |
 | `tests/` | `unittest` and `node --test` suites (below). |
 
 ## Tests

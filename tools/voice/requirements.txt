@@ -1,0 +1,4 @@
+# The voice pipeline uses only the standard library, except where it opens the
+# serial port: the live daemon (tasklot_ears.py) and tasklot_voice.py --push.
+# The ears end-to-end test is skipped without it.
+pyserial==3.5
