@@ -6,9 +6,11 @@ code), E-22 (timeout, error, empty or multi-line output), E-23 (too little said)
 """
 import subprocess
 import unittest
+from unittest import mock
 
 from tasklot.labeler import (
-    MIN_CONTENT_WORDS, PROMPT, Labeler, content_word_count, fit, invented, unrelated,
+    MIN_CONTENT_WORDS, PROMPT, Labeler, claude_cli_runner, content_word_count, fit, invented,
+    unrelated,
 )
 from tasklot.logs import LogCapture, silent
 
@@ -134,6 +136,40 @@ class LabelerTest(unittest.TestCase):
         self.assertIn("invented 'tonight'", log.text())
         self.assertIsNone(Labeler(runner=fixed_runner("PLACE ORDER"), log=log).label(said))
         self.assertIn("shares no word", log.text())
+
+
+class ClaudeCliRunnerTest(unittest.TestCase):
+    """The default runner's command line and exit-status handling, with
+    subprocess.run replaced so no CLI or model is ever called."""
+
+    def fake_run(self, returncode=0, stdout="", stderr=""):
+        def run(cmd, **kwargs):
+            run.calls.append((cmd, kwargs))
+            return subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr=stderr)
+        run.calls = []
+        return run
+
+    def test_no_tools_and_no_saved_session(self):
+        run = self.fake_run(stdout="EMAIL PROF\n")
+        with mock.patch("tasklot.labeler.subprocess.run", run):
+            self.assertEqual(claude_cli_runner("the prompt", 9), "EMAIL PROF\n")
+        cmd, kwargs = run.calls[0]
+        self.assertEqual(cmd, ["claude", "-p", "--tools", "", "--no-session-persistence",
+                               "the prompt"])
+        self.assertEqual(kwargs["timeout"], 9)
+
+    def test_non_zero_exit_raises_and_labeler_falls_back(self):
+        # An error printed to stdout (a login prompt, a quota message) must
+        # never become a candidate label.
+        run = self.fake_run(returncode=1, stdout="Invalid API key - please run /login",
+                            stderr="not logged in")
+        with mock.patch("tasklot.labeler.subprocess.run", run):
+            with self.assertRaises(RuntimeError) as ctx:
+                claude_cli_runner("the prompt", 9)
+            self.assertIn("not logged in", str(ctx.exception))
+            log = LogCapture()
+            self.assertIsNone(Labeler(log=log).label("invite the team to the planning meeting"))
+            self.assertIn("falling back to rules", log.text())
 
 
 if __name__ == "__main__":

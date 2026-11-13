@@ -11,8 +11,8 @@ shares no word with the transcript (unrelated) or adds a time, date, or number
 that was never said (invented). Any failure, timeout, or rejection returns None
 and the rule-based label stands.
 
-The default runner shells out to the `claude` CLI (`claude -p <prompt>`), which
-is what the project used. Tests pass a fake runner, so no test ever calls a model
+The default runner shells out to the `claude` CLI (`claude -p <prompt>`, with
+tools and saved sessions turned off), which is what the project used. Tests pass a fake runner, so no test ever calls a model
 or needs a key. Turn the upgrade off entirely with TASKLOT_LLM=0.
 """
 from __future__ import annotations
@@ -84,6 +84,12 @@ Runner = Callable[[str, float], str]
 def claude_cli_runner(prompt: str, timeout: float) -> str:
     """Run the prompt through the `claude` CLI and return its stdout.
 
+    The CLI runs with no tools (`--tools ""`), so a spoken prompt injection
+    reaches a model that can only answer, and without session persistence, so
+    transcripts are not saved as sessions on disk after the recordings are
+    deleted. `--tools` takes a list, so another option has to follow it before
+    the prompt.
+
     Args:
         prompt: the full prompt text.
         timeout: seconds before giving up.
@@ -94,9 +100,13 @@ def claude_cli_runner(prompt: str, timeout: float) -> str:
     Raises:
         FileNotFoundError: the CLI is not installed.
         subprocess.TimeoutExpired: it took longer than `timeout`.
+        RuntimeError: it exited non-zero (not logged in, out of quota, ...);
+            its stdout is then an error message, not a label.
     """
-    result = subprocess.run(["claude", "-p", prompt], capture_output=True, text=True,
-                            timeout=timeout)
+    result = subprocess.run(["claude", "-p", "--tools", "", "--no-session-persistence", prompt],
+                            capture_output=True, text=True, timeout=timeout)
+    if result.returncode != 0:
+        raise RuntimeError((result.stderr or "").strip() or f"claude exited {result.returncode}")
     return result.stdout
 
 

@@ -25,6 +25,7 @@ from .logs import LogFn, log as default_log
 # A 16 kHz mono WAV header is 44 bytes; under this size the recording holds
 # about a quarter second of audio, which is never a task (E-01).
 MIN_WAV_BYTES = 8000
+STDERR_LOG_CHARS = 200      # enough of whisper-cli's error to say why, not a dump
 
 Runner = Callable[..., "subprocess.CompletedProcess"]
 
@@ -82,7 +83,8 @@ class Transcriber:
 
         Returns:
             str: the transcript on one line, or "" if the file is missing or
-            too small, or whisper failed or timed out (all logged).
+            too small, or whisper failed, exited non-zero, or timed out (all
+            logged, with whisper's stderr when it exited non-zero).
         """
         path = Path(path)
         if not path.exists() or path.stat().st_size < MIN_WAV_BYTES:
@@ -93,6 +95,12 @@ class Transcriber:
                                  capture_output=True, text=True, timeout=self.timeout)
         except Exception as exc:  # FileNotFoundError, TimeoutExpired, ...
             self.log(f"[whisper] failed: {exc}")
+            return ""
+        if result.returncode != 0:
+            # A bad model file or audio format: the reason is on stderr, and
+            # whatever reached stdout is not a transcript.
+            reason = (result.stderr or "").strip()[:STDERR_LOG_CHARS]
+            self.log(f"[whisper] failed (exit {result.returncode}): {reason}")
             return ""
         return _collapse(result.stdout)
 

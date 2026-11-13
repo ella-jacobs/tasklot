@@ -26,12 +26,12 @@ class TranscriberTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def transcriber(self, stdout="", exc=None):
+    def transcriber(self, stdout="", exc=None, returncode=0, stderr=""):
         def runner(cmd, **kwargs):
             self.calls.append((cmd, kwargs))
             if exc:
                 raise exc
-            return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
+            return subprocess.CompletedProcess(cmd, returncode, stdout=stdout, stderr=stderr)
         return Transcriber("whisper-cli", "/models/base.bin", timeout=90, runner=runner,
                            which=lambda name: None, log=self.log)
 
@@ -59,6 +59,14 @@ class TranscriberTest(unittest.TestCase):
             with self.subTest(exc=type(exc).__name__):
                 self.assertEqual(self.transcriber(exc=exc).transcribe(self.wav), "")
         self.assertIn("[whisper] failed", self.log.text())
+
+    def test_non_zero_exit_is_empty_and_logs_the_reason(self):
+        # A bad model file: whisper-cli exits non-zero, and stdout must not be used.
+        self.wav.write_bytes(b"\0" * MIN_WAV_BYTES)
+        t = self.transcriber(stdout="partial", returncode=3,
+                             stderr="error: failed to load model '/models/base.bin'\n")
+        self.assertEqual(t.transcribe(self.wav), "")
+        self.assertIn("[whisper] failed (exit 3): error: failed to load model", self.log.text())
 
     def test_problems_reported_at_startup(self):
         problems = self.transcriber().problems()
