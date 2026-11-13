@@ -225,9 +225,9 @@ Compiled with arduino-cli, core `arduino:avr` 1.8.8, MFRC522 1.4.12, LiquidCryst
 
 | Build | Flash before | Flash after | Static RAM before | Static RAM after |
 |---|---|---|---|---|
-| Default (`REMEMBER 0`, `USE_PRESENCE 1`) | 15084 | 16006 (+922, 6 %) | 1565 | 1561 (19 %) |
-| `REMEMBER 1` | 15874 | 16832 (+958, 6 %) | 1565 | 1561 |
-| `USE_PRESENCE 0` | 14758 | 15744 (+986, 6 %) | 1549 | 1561 |
+| Default (`REMEMBER 0`, `USE_PRESENCE 1`) | 15084 | 16024 (+940, 6 %) | 1565 | 1561 (19 %) |
+| `REMEMBER 1` | 15874 | 16850 (+976, 6 %) | 1565 | 1561 |
+| `USE_PRESENCE 0` | 14758 | 15762 (+1004, 6 %) | 1549 | 1561 |
 
 The extra flash is the cost of passing objects by reference and of the event methods
 that used to be inlined `Serial.print` runs; it is under 0.4 % of the Mega's flash. Static

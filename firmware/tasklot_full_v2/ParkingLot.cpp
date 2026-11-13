@@ -62,13 +62,11 @@ void ParkingLot::renderLine(byte space, const CarRegistry& cars, char* out) cons
 
   const char* label = cars.label(car);
   if (!label[0]) {
-    // Parked, but no label yet: show the car number. MAX_CARS is 8, so one digit.
-    text[0] = 'C';
-    text[1] = 'A';
-    text[2] = 'R';
-    text[3] = ' ';
-    text[4] = static_cast<char>('1' + car);
-    text[5] = '\0';
+    // Parked, but no label yet: "CAR <n>", so the space still reads as occupied.
+    // Written character by character on purpose: a string literal would cost SRAM on
+    // the AVR. MAX_CARS is 8, so the number is one digit.
+    const char unlabelled[] = {'C', 'A', 'R', ' ', static_cast<char>('1' + car), '\0'};
+    memcpy(text, unlabelled, sizeof(unlabelled));
     return;
   }
 

@@ -174,11 +174,10 @@ void LcdView::paint() {
 // Only the banner flashes; the rest stays put, so it reads as an active indicator
 // rather than a screen that is broken.
 void LcdView::paintOrdering() {
-  char line[LCD_COLS + 1];
+  // "CAR <n>", built character by character so no literal costs SRAM; MAX_CARS is 8,
+  // so the number is one digit.
+  const char line[] = {'C', 'A', 'R', ' ', static_cast<char>('1' + order_.ordering), '\0'};
   centreRow(ROW_TITLE, flashOn_ ? TEXT_ORDERING : TEXT_EMPTY);
-  strcpy(line, "CAR ");
-  line[4] = static_cast<char>('1' + order_.ordering);
-  line[5] = '\0';
   centreRow(ROW_MAIN, line);
   centreRow(ROW_SUB, TEXT_LISTENING);
   centreRow(ROW_HINT, TEXT_PARK_HINT);

@@ -67,12 +67,6 @@ class TaskLot {
   /** Advances screen timers (flashing, paging, timeouts). Never blocks. */
   void tickScreen();
 
-  /** The objects inside, for the host tests. */
-  const CarRegistry& cars() const { return cars_; }
-  const ParkingLot& lot() const { return lot_; }
-  const OrderState& order() const { return order_; }
-  const LcdView& view() const { return view_; }
-
  private:
   int8_t identify(const Uid& uid);
   void checkArrival(byte space);
