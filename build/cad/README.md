@@ -10,18 +10,23 @@ bottom panel, and the original one-piece printed base.
 | `tasklot_base.scad` | The geometry. Select a part with `-D part="<name>"`. |
 | `view/*.scad` | One-line wrappers for opening a single part in the OpenSCAD GUI. |
 | `exports/*.stl` | The exported parts. |
-| `audit.py` | Pre-print checks: export freshness, mesh validity, bed fit per printer, bed-contact area, and a ray-cast of the RC522 channel against measured hardware. Writes PNG renders to `renders/`. |
-| `render.sh` | Renders every part to `renders/` for visual review. |
+| `audit.py` | Pre-print checks: export freshness, mesh validity, bed fit per printer, bed-contact area, and a ray-cast of the RC522 channel against measured hardware. Writes iso and underside PNG renders to `renders/`. |
+| `render.sh` | Renders every part (or one) to `renders/`, iso and top views, for visual review. |
 
 ```bash
 cd build/cad
-python3 audit.py              # all parts (needs OpenSCAD)
+python3 audit.py              # all parts (renders need OpenSCAD)
 python3 audit.py restaurant   # checks every part, renders only this one
-./render.sh
+./render.sh                   # or ./render.sh lcd_frame
 ```
 
+Both scripts find OpenSCAD through `OPENSCAD_BIN`, then `PATH`, then the usual macOS app
+locations. `renders/` is git-ignored.
+
 `audit.py` prints its checks; it does not judge the renders. Look at the `-under` views,
-because the channels, lips, and pockets are all on undersides.
+because the channels, lips, and pockets are all on undersides. Its freshness check
+compares file modification times, so it only means something in the working copy where
+the parts were exported; in a fresh clone every file has the checkout time.
 
 The `HARDWARE` table at the top of `audit.py` is the ground-truth component list. Any
 entry marked `verified=False` is still a guess.

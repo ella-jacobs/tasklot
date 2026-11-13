@@ -19,15 +19,21 @@ only M/L/z, so the PDF paths below are exact, not approximated.
 Usage:  python3 build/laser/make_uls_files.py     (from any directory)
         OPENSCAD_BIN=/path/to/openscad python3 make_uls_files.py
 
-Writes exports/uls/*.pdf and *.svg next to this script; scratch layers go in
-exports/uls/.layers/ (git-ignored). Raises CalledProcessError if OpenSCAD fails.
+OpenSCAD is found through OPENSCAD_BIN, then PATH, then the usual macOS app
+locations. Writes exports/uls/*.pdf and *.svg next to this script; scratch
+layers go in exports/uls/.layers/ (git-ignored). Raises CalledProcessError if
+OpenSCAD fails.
 """
 import os
 import re
+import shutil
 import subprocess
 import zlib
 
-OPENSCAD = os.environ.get("OPENSCAD_BIN", "/opt/homebrew/bin/openscad")
+OPENSCAD = (os.environ.get("OPENSCAD_BIN") or shutil.which("openscad") or next((p for p in [
+    "/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD",
+    "/Applications/OpenSCAD-2021.01.app/Contents/MacOS/OpenSCAD",
+] if os.path.exists(p)), "openscad"))
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Relative to HERE; main() changes into it so the script runs from any directory.
 SCAD, OUT, TMP = "tasklot_laser.scad", "exports/uls", "exports/uls/.layers"
@@ -87,16 +93,14 @@ def subpaths(d):
 # href = height of the coordinate frame being placed. OpenSCAD emits scad point
 # (x,y) as (x,-y) in absolute coords regardless of how it cropped the viewBox,
 # so placement is one translate by (PX, PY+href) -- crop-proof.
-DECK_H, WALLS_H, BOTTOM_H, RECOVERY_H, RECUT_H = 270.0, 170.0, 266.0, 216.0, 241.0
+DECK_H, WALLS_H, BOTTOM_H, RECOVERY_H, RECUT_H = 270.0, 82.0, 266.0, 216.0, 241.0
 
-# The deck sheet. One shot, so it holds ONLY the deck: the parking surface, the
-# engraved lot markings, the six reader guides, the LCD cable hole. Both pages are
-# the same physical sheet -- page 2 is the flip.
-#
-# The empty right-hand third of the sheet could take the two 264 mm side walls stood
-# on end (38 x 264 fits in the 259 mm x 300 mm that survives even undersized 12x24
-# stock, which is often really 11.8 x 23.6 in). Deliberately left out: one shot, one
-# sheet, nothing competing with the deck. The walls live on the walls sheet instead.
+# The deck sheet: one 12 x 24 in sheet, one job. The deck itself (parking surface,
+# rastered lot markings, two etched guides, LCD cable hole), and in the strip
+# beside it the two 264 mm side walls stood on end, 20 corner-block squares, and a
+# plywood LCD bezel and back (uls_deck_sheet_extras in tasklot_laser.scad). 38 x 264
+# fits in the 259 x 300 mm that survives even undersized stock, which is often
+# really 11.8 x 23.6 in.
 DECK_SHEET = [
     ("DECK SHEET - everything, one job",
      "Raster the lot markings, etch the two hidden guides, then cut: the deck, both "
@@ -107,16 +111,16 @@ DECK_SHEET = [
       ("uls_deck_sheet_extras", "cut", DECK_H)]),
 ]
 
-# The walls sheet. All four walls in one 330 x 170 mm block -- a fraction of a sheet,
-# so there is room to spare if anything else needs adding later.
+# The walls sheet: the front and back walls only, a 330 x 82 mm scrap. The side walls
+# are on the deck sheet.
 WALLS_SHEET = [
     ("WALLS SHEET - front and back walls",
      "Front (Mega USB/power opening + three holes) and back (power-cord pass-through). "
      "330 x 82 mm. The side walls moved to the deck sheet. Cut only.",
-     [("uls_walls_sheet", "cut", 82.0)]),
+     [("uls_walls_sheet", "cut", WALLS_H)]),
 ]
 
-# Dropped from the main file 8/24. Two reasons: the deck outline is symmetric on BOTH
+# Dropped from the main file, for two reasons: the deck outline is symmetric on BOTH
 # axes, so it seats back in its hole four ways and only one is correct -- there is no
 # feature to register orientation against, only position. And the six guides are the
 # 67 x 51 footprint of the PRINTED holders, which were never printed and are now being

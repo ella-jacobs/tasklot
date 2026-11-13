@@ -13,13 +13,15 @@ hand-drawn.
 | `exports/sheet_*` | The earlier per-sheet SVG/DXF exports. |
 
 ```bash
-cd build/laser
-python3 make_uls_files.py     # needs OpenSCAD; set OPENSCAD_BIN if it is not on the default path
-./render.sh                   # run from build/laser
+python3 build/laser/make_uls_files.py   # needs OpenSCAD
+build/laser/render.sh
 ```
 
-Text parts (the lot numerals and the sign lettering) take OpenSCAD several minutes each
-to export.
+Both run from any directory and find OpenSCAD through `OPENSCAD_BIN`, then `PATH`, then
+the usual macOS app locations. With OpenSCAD 2021.01 a full `make_uls_files.py` run takes
+a few seconds and reproduces every file in `exports/uls/` byte for byte. `render.sh`
+reproduces every `exports/sheet_*` file except `sheet_3_cut`, which was exported before
+the restaurant roof gained its sign socket; re-running `render.sh` updates it.
 
 The laser conversion was a shared effort with a teammate (see the credits in the root
 README), and was AI-assisted (Claude, Anthropic). Verify dimensions and laser settings

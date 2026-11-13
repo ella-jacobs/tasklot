@@ -16,10 +16,16 @@ Checks, in order:
 
 The script only reports; it does not judge the renders. Exit status is 1 if any
 check is a blocker (FAIL), else 0.
+
+Freshness compares file modification times, so it only means something in the
+working copy where the parts were exported: a fresh git clone stamps every file
+with the checkout time. OpenSCAD is found through OPENSCAD_BIN, then PATH, then
+the usual macOS app locations.
 """
 import hashlib
 import math
 import os
+import shutil
 import struct
 import subprocess
 import sys
@@ -30,11 +36,10 @@ SCAD = os.path.join(CAD, "tasklot_base.scad")
 PARAMS = os.path.join(CAD, "tasklot_parameters.scad")
 EXPORTS = os.path.join(CAD, "exports")
 PKG = os.path.join(CAD, "print-package")   # optional copy of exports/ sent to a printer
-OPENSCAD = next((p for p in [
-    "/opt/homebrew/bin/openscad",
+OPENSCAD = (os.environ.get("OPENSCAD_BIN") or shutil.which("openscad") or next((p for p in [
     "/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD",
     "/Applications/OpenSCAD-2021.01.app/Contents/MacOS/OpenSCAD",
-] if os.path.exists(p)), None)
+] if os.path.exists(p)), None))
 
 # ---- GROUND TRUTH -----------------------------------------------------------
 # Real measured/datasheet component dimensions. UPDATE WITH CALIPERS.
@@ -59,8 +64,8 @@ PRINTERS = {           # name: (X, Y, Z)  -- UPDATE once the bed is measured
 SELF_SERVE_PRINTER = "MK3S (self-serve)"
 PARTS = ["reader_coupon", "lcd_frame", "restaurant", "restaurant_body",
          "restaurant_roof", "restaurant_sign", "base", "bottom_panel"]
-# restaurant_body/roof/sign are the parts the print package actually sends to the printer.
-# They were absent from this list, so the two printed parts were the only two never checked.
+# restaurant_body/roof/sign are the parts actually sent to the printer, so they are checked
+# alongside the one-piece restaurant they were split from.
 STL_OF = {p: os.path.join(EXPORTS, "tasklot-" + p.replace("_", "-") + ".stl") for p in PARTS}
 
 # Exports that are intentionally a PLATE of several loose objects (the sign and its two
@@ -235,8 +240,8 @@ def reorient(T, how):
     if how == "flip_x":
         def f(p):
             return (p[0], -p[1], -p[2])
-    # +90 about X. -90 was recorded here and is wrong: it stands the frame on its hollow
-    # back for 1037mm2 of contact on a 73mm-tall part. Bezel face down is 4584mm2, same time.
+    # +90 about X puts the bezel face down (4584 mm2 of contact). -90 would stand the
+    # 73 mm-tall frame on its hollow back (1037 mm2) for the same print time.
     elif how == "tip_x":
         def f(p):
             return (p[0], -p[2], p[1])
