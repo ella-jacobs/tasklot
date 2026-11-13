@@ -10,6 +10,7 @@ Run from tools/voice. The original scripts still work and call into this module:
 from __future__ import annotations
 
 import argparse
+import signal
 import sys
 from pathlib import Path
 from typing import Optional, Sequence
@@ -59,8 +60,24 @@ def add_voice_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--clear", action="store_true", help="empty tasks.json")
 
 
+def _raise_keyboard_interrupt(signum, frame) -> None:
+    """Signal handler: turn the signal into a KeyboardInterrupt."""
+    raise KeyboardInterrupt
+
+
+def install_sigterm_handler():
+    """Make SIGTERM (for example `kill <pid>`) stop the daemon the way Ctrl-C
+    does, so shutdown() still runs: the open recording is deleted and ffmpeg
+    does not outlive the daemon. Must be called from the main thread.
+
+    Returns:
+        the previous SIGTERM handler, so a caller can restore it.
+    """
+    return signal.signal(signal.SIGTERM, _raise_keyboard_interrupt)
+
+
 def run_ears(args: argparse.Namespace, settings: Settings) -> int:
-    """Wire and run the live daemon until Ctrl-C.
+    """Wire and run the live daemon until Ctrl-C or SIGTERM.
 
     Returns:
         int: exit status (EXIT_PORT if the port will not open).
@@ -93,6 +110,7 @@ def run_ears(args: argparse.Namespace, settings: Settings) -> int:
     ears.startup_report()
     ears.start_background_threads()
     log(f"[ears] attached to {settings.port}. Drive a car past the speaker to order.")
+    install_sigterm_handler()
     try:
         ears.run(link.readline)
     except KeyboardInterrupt:

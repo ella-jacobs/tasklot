@@ -82,12 +82,13 @@ class EarsAgainstFakeBoardTest(unittest.TestCase):
         time.sleep(STARTUP_WAIT_S)
 
     def tearDown(self):
-        self.proc.terminate()
-        try:
-            self.log = self.proc.communicate(timeout=5)[0]
-        except subprocess.TimeoutExpired:
-            self.proc.kill()
-            self.proc.communicate()
+        if self.proc.poll() is None:
+            self.proc.terminate()
+            try:
+                self.proc.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+                self.proc.communicate()
         os.close(self.master)
         os.close(self.slave)
         self.scratch.cleanup()
@@ -134,6 +135,10 @@ class EarsAgainstFakeBoardTest(unittest.TestCase):
         time.sleep(0.5)
         self.drain()
         self.assertEqual("".join(self.captured), EXPECTED_WIRE)
+        # 6. SIGTERM stops the daemon the way Ctrl-C does, so shutdown() runs.
+        self.proc.terminate()
+        log = self.proc.communicate(timeout=5)[0]
+        self.assertIn("[ears] stopped.", log)
 
 
 if __name__ == "__main__":

@@ -12,10 +12,10 @@ from pathlib import Path
 from tasklot.ears import Ears, Job
 from tasklot.labeler import Labeler
 from tasklot.logs import LogCapture
-from tasklot.recorder import NullRecorder
+from tasklot.recorder import NullRecorder, Recorder
 from tasklot.side_channels import FileInbox
 from tasklot.transcriber import FakeTranscriber
-from tests.fakes import FakeClock, RecordingSender
+from tests.fakes import FakeClock, FakeProcess, RecordingSender
 
 TRANSCRIPT = "email the professor about the final project"
 
@@ -278,6 +278,56 @@ class StartupAndFailureTest(EarsTestCase):
         self.make(transcriber=Broken())
         self.ears.startup_report()
         self.assertEqual(self.log.lines, ["[whisper] !! whisper-cli not found on PATH"])
+
+
+class ShutdownTest(unittest.TestCase):
+    """Ctrl-C or SIGTERM never leaves a recording on disk (privacy default)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        clock = FakeClock()
+
+        def ffmpeg(cmd, **kwargs):
+            # The fake "ffmpeg" writes its WAV (the last argument) when it stops.
+            return FakeProcess(writes_file=Path(cmd[-1]))
+
+        self.log = LogCapture()
+        self.recorder = Recorder(self.dir, process_factory=ffmpeg, clock=clock,
+                                 sleep=clock.sleep, log=self.log)
+        self.transcriber = ScriptedTranscriber(TRANSCRIPT)
+        self.sent = RecordingSender()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def make(self, delete_recordings=True):
+        return Ears(self.sent, self.recorder, self.transcriber, log=self.log,
+                    delete_recordings=delete_recordings)
+
+    def test_shutdown_mid_order_deletes_the_recording(self):
+        ears = self.make()
+        ears.handle_line("SPEAKER  CAR 3 ordering")
+        ears.shutdown()
+        self.assertFalse(self.recorder.is_running())
+        self.assertEqual(list(self.dir.iterdir()), [])
+
+    def test_shutdown_deletes_queued_recordings_without_transcribing(self):
+        ears = self.make()
+        ears.handle_line("SPEAKER  CAR 3 ordering")
+        ears.handle_line("SPACE 2  <- CAR 3 parked")
+        self.assertEqual(len(list(self.dir.iterdir())), 1)
+        ears.shutdown()
+        self.assertEqual(list(self.dir.iterdir()), [])
+        self.assertEqual(ears.jobs.qsize(), 0)
+        self.assertEqual(self.transcriber.texts, [TRANSCRIPT])  # never transcribed
+        self.assertEqual(self.sent.sent, [])
+
+    def test_shutdown_keeps_recordings_when_asked(self):
+        ears = self.make(delete_recordings=False)
+        ears.handle_line("SPEAKER  CAR 3 ordering")
+        ears.shutdown()
+        self.assertEqual([p.name for p in self.dir.iterdir()], ["tasklot_order_car3_1.wav"])
 
 
 class SideChannelTest(EarsTestCase):

@@ -8,12 +8,14 @@ fake sleep, so nothing touches hardware or waits in real time.
 import io
 import json
 import os
+import signal
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
 
+from tasklot import cli
 from tasklot.config import MAX_CARS, Settings
 from tasklot.offline import OfflineError, OfflineTool
 from tasklot.serial_link import SerialLink
@@ -219,6 +221,17 @@ class CommandLineTest(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("[ears] !!", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
+
+
+class SigtermTest(unittest.TestCase):
+    """SIGTERM is turned into the same KeyboardInterrupt path as Ctrl-C."""
+
+    def test_handler_is_installed_and_raises_keyboard_interrupt(self):
+        previous = cli.install_sigterm_handler()
+        self.addCleanup(signal.signal, signal.SIGTERM, previous)
+        handler = signal.getsignal(signal.SIGTERM)
+        with self.assertRaises(KeyboardInterrupt):
+            handler(signal.SIGTERM, None)
 
 
 if __name__ == "__main__":

@@ -381,10 +381,26 @@ class Ears:
                 self.handle_line(line)
 
     def shutdown(self) -> None:
-        """Stop the threads and close any open recording."""
+        """Stop the threads and close any open recording.
+
+        With delete_recordings (the default), the open recording and every WAV
+        still waiting in the queue are deleted without being transcribed, so
+        quitting mid-order leaves no voice audio on disk. Otherwise they are
+        kept for debugging.
+        """
         self.stop_event.set()
         with self._lock:
-            self.recorder.stop()
+            if not self.delete_recordings:
+                self.recorder.stop()
+                return
+            self.recorder.discard()
+        while True:
+            try:
+                job = self.jobs.get_nowait()
+            except queue.Empty:
+                break
+            _remove(job.path)
+            self.jobs.task_done()
 
     def _worker_loop(self) -> None:
         """Worker thread: run queued transcription jobs until stopped."""
