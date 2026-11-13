@@ -68,16 +68,27 @@ class TaskLot {
   void tickScreen();
 
  private:
+  // UID -> car index, registering a new plausible UID; NO_CAR (reported) on failure.
   int8_t identify(const Uid& uid);
+  // An empty space: read a tag arriving, and park it if it is a known or new car.
   void checkArrival(byte space);
+  // An occupied space: presence ping; reports `left` after GONE_MS of silence.
   void checkStillThere(byte space);
+  // One lane: read a passing car, debounce it, and act as the speaker or the pickup.
   void checkLane(byte lane);
+  // A car came to rest on `space`: closes any order or read-back (parking is the stop).
   void carArrived(byte space, int8_t car);
+  // A car passed the speaker: an order if it is blank, a read-back if it has a label.
   void speakerPass(int8_t car);
+  // A car passed the pickup lane: blank its label and release its space.
   void pickupPass(int8_t car);
+  // Prints `left` for every space set in `releasedMask` (bit s = space s).
   void printVacated(byte releasedMask, int8_t car);
+  // Blanks a label and echoes `TASK n `, the same shape as any other label change.
   void blankLabel(int8_t car);
+  // Prints the lot to serial (two rules and four lines) and repaints the LCD.
   void printLot();
+  // Parses and runs one command line from the laptop (DESIGN.md section 3.2).
   void runCommand(const char* line);
 
   RfidSlot* const* spaces_;

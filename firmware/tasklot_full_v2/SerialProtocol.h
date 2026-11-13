@@ -138,9 +138,13 @@ class SerialProtocol {
   void printHelp();
 
  private:
+  // "<hex> <hex> ... " then the line ending; two uppercase digits per byte.
   void printUidBytes(const Uid& uid);
+  // " reader (SS <pin>): 0x<ver>   <verdict>", shared by space and lane lines.
   void printReaderTail(byte ssPin, byte version);
+  // "<before><n><after>" for the single-car events (SPEAKER, PLAYBACK, PICKUP).
   void printCarEvent(const __FlashStringHelper* before, int8_t car, const __FlashStringHelper* after);
+  // "SPACE <s><arrow><n><after>" for parked / left.
   void printSpaceEvent(byte space, const __FlashStringHelper* arrow, int8_t car,
                        const __FlashStringHelper* after);
 

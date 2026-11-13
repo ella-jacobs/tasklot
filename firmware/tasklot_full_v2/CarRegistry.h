@@ -110,9 +110,10 @@ class CarRegistry {
   bool forget();
 
  private:
-  void saveHeader();
-  void saveCar(byte car);
-  void saveAll();
+  // EEPROM writers (REMEMBER 1; empty otherwise). All go through EEPROM.update().
+  void saveHeader();      // magic, version, car count
+  void saveCar(byte car); // one car's UID and label
+  void saveAll();         // the header and every registered car
 
   Uid known_[MAX_CARS];
   char labels_[MAX_CARS][TASK_LEN + 1];

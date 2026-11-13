@@ -107,11 +107,11 @@ class LcdView {
   bool tick(uint32_t now);
 
  private:
-  void writeRow(byte row, const char* text);
-  void centreRow(byte row, const char* text);
-  void paintOrdering();
-  void paintAnnouncement();
-  void paintReadback();
+  void writeRow(byte row, const char* text);   // left-aligned, padded; skipped if unchanged
+  void centreRow(byte row, const char* text);  // centred, then writeRow()
+  void paintOrdering();      // ORDER IN PROGRESS (only the title flashes)
+  void paintAnnouncement();  // ORDER IS IN / ALL DONE!! (the whole message flashes)
+  void paintReadback();      // YOUR ORDER: the current page, or the label until text arrives
 
   const CarRegistry& cars_;
   const ReadbackText& text_;
