@@ -16,11 +16,20 @@ markings while the deck is still held by the sheet, then cut it free.
 Geometry is exported from tasklot_laser.scad, never hand-drawn. OpenSCAD emits
 only M/L/z, so the PDF paths below are exact, not approximated.
 
-Usage:  python3 make_uls_files.py
+Usage:  python3 build/laser/make_uls_files.py     (from any directory)
+        OPENSCAD_BIN=/path/to/openscad python3 make_uls_files.py
+
+Writes exports/uls/*.pdf and *.svg next to this script; scratch layers go in
+exports/uls/.layers/ (git-ignored). Raises CalledProcessError if OpenSCAD fails.
 """
-import os, re, subprocess, zlib
+import os
+import re
+import subprocess
+import zlib
 
 OPENSCAD = os.environ.get("OPENSCAD_BIN", "/opt/homebrew/bin/openscad")
+HERE = os.path.dirname(os.path.abspath(__file__))
+# Relative to HERE; main() changes into it so the script runs from any directory.
 SCAD, OUT, TMP = "tasklot_laser.scad", "exports/uls", "exports/uls/.layers"
 
 BED_W, BED_H = 609.6, 304.8      # 24 x 12 in engraving field, origin top-left
@@ -33,12 +42,24 @@ _cache = {}
 
 
 def scad_layer(part):
+    """Export one tasklot_laser.scad part to SVG and return its path data.
+
+    Results are cached, because several sheets reuse the same part.
+
+    Returns:
+        list[str]: the `d` attribute of every <path> OpenSCAD wrote.
+
+    Raises:
+        subprocess.CalledProcessError: OpenSCAD failed.
+        SystemExit: the part exported no geometry.
+    """
     if part not in _cache:
         os.makedirs(TMP, exist_ok=True)
         dst = f"{TMP}/{part}.svg"
         subprocess.run([OPENSCAD, "-o", dst, "-D", f'part="{part}"', SCAD],
                        check=True, capture_output=True)
-        paths = re.findall(r'<path\s+d="(.*?)"', open(dst).read(), re.S)
+        with open(dst) as f:
+            paths = re.findall(r'<path\s+d="(.*?)"', f.read(), re.S)
         if not paths:
             raise SystemExit(f"{part}: OpenSCAD returned no geometry")
         _cache[part] = paths
@@ -72,7 +93,7 @@ DECK_H, WALLS_H, BOTTOM_H, RECOVERY_H, RECUT_H = 270.0, 170.0, 266.0, 216.0, 241
 # engraved lot markings, the six reader guides, the LCD cable hole. Both pages are
 # the same physical sheet -- page 2 is the flip.
 #
-# The empty right-hand third of her sheet could take the two 264 mm side walls stood
+# The empty right-hand third of the sheet could take the two 264 mm side walls stood
 # on end (38 x 264 fits in the 259 mm x 300 mm that survives even undersized 12x24
 # stock, which is often really 11.8 x 23.6 in). Deliberately left out: one shot, one
 # sheet, nothing competing with the deck. The walls live on the walls sheet instead.
@@ -105,7 +126,7 @@ UNDERSIDE = ("OPTIONAL - deck underside guides (requires flipping the deck)",
              "Only useful if the reader holders end up 67 x 51. Already mirrored.",
              [("deck_underside_score_mirrored", "etch", DECK_H)])
 
-# Fallback for the deck sheet's page 1 if the makerspace slot turns out to be short. Same deck,
+# Fallback for the deck sheet's page 1 if laser time turns out to be short. Same deck,
 # markings etched as thin outlines instead of burned solid: much faster, but hollow
 # numerals and thin double-line stalls, which are much harder to see from a distance.
 ALT = ("DECK SHEET ALT - deck top, all vector, no raster pass",
@@ -154,6 +175,15 @@ def page_stream(groups):
 
 
 def write_pdf(path, pages):
+    """Write a minimal PDF 1.4 file with one bed-sized page per run.
+
+    Args:
+        path: output file.
+        pages: list of (title, note, groups); groups as in page_stream().
+
+    Side effects:
+        Writes `path`; exports every part it needs through OpenSCAD (cached).
+    """
     W, H = BED_W * MM2PT, BED_H * MM2PT
     objs, kids = {}, []
     n = 3
@@ -180,11 +210,23 @@ def write_pdf(path, pages):
         buf += b"%010d 00000 n\n" % offsets.get(i, 0)
     buf += (b"trailer\n<< /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n"
             % (max(objs) + 1, xref))
-    open(path, "wb").write(bytes(buf))
+    with open(path, "wb") as f:
+        f.write(bytes(buf))
 
 
 # ---------------------------------------------------------------- SVG fallback
 def write_svg(name, title, groups, flatten=False, canvas=(BED_W, BED_H), offset=(PX, PY)):
+    """Write one run as an SVG fallback, colour-coded the same way as the PDF.
+
+    Args:
+        name: file name under OUT, without .svg.
+        title: shown in the SVG comment and <title>.
+        groups: list of (part, mode, href); mode is "cut", "etch" or "raster".
+        flatten: write every contour as its own closed path in page coordinates,
+            instead of OpenSCAD's compound paths under a translate.
+        canvas: (width, height) of the page in mm.
+        offset: (x, y) where the frame's origin is placed on the page, in mm.
+    """
     canvas_w, canvas_h = canvas
     ox, oy = offset
     gs = []
@@ -214,7 +256,7 @@ def write_svg(name, title, groups, flatten=False, canvas=(BED_W, BED_H), offset=
             body = "\n".join('    <path d="%s"/>' % d for d in scad_layer(part))
             gs.append('  <g transform="translate(%s,%s)" %s>\n%s\n  </g>'
                       % (ox, oy + href, style, body))
-    open("%s/%s.svg" % (OUT, name), "w").write(
+    svg = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<!-- TaskLot %s. VLS 3.60, %s x %s mm bed, origin top-left.\n'
         '     red=vector cut  blue=vector etch  black=raster engrave.\n'
@@ -224,34 +266,43 @@ def write_svg(name, title, groups, flatten=False, canvas=(BED_W, BED_H), offset=
         '  <title>TaskLot %s</title>\n%s\n</svg>\n'
         % (title, canvas_w, canvas_h, canvas_w, canvas_h, canvas_w, canvas_h,
            title, "\n".join(gs)))
+    with open("%s/%s.svg" % (OUT, name), "w") as f:
+        f.write(svg)
 
 
-os.makedirs(OUT, exist_ok=True)
+def main():
+    """Write every run file and print what each one is for."""
+    os.chdir(HERE)
+    os.makedirs(OUT, exist_ok=True)
 
-write_pdf(f"{OUT}/TASKLOT-deck-sheet.pdf", DECK_SHEET)
-print(f"  {OUT}/TASKLOT-deck-sheet.pdf             {len(DECK_SHEET)} pages  <- ESSENTIAL, all on ONE 12x24 sheet")
-for i, (title, _n, groups) in enumerate(DECK_SHEET, 1):
-    write_svg("deck_sheet_page%d" % i, title, groups)
+    write_pdf(f"{OUT}/TASKLOT-deck-sheet.pdf", DECK_SHEET)
+    print(f"  {OUT}/TASKLOT-deck-sheet.pdf             {len(DECK_SHEET)} pages  <- ESSENTIAL, all on ONE 12x24 sheet")
+    for i, (title, _n, groups) in enumerate(DECK_SHEET, 1):
+        write_svg("deck_sheet_page%d" % i, title, groups)
 
-write_pdf(f"{OUT}/TASKLOT-walls-sheet.pdf", WALLS_SHEET)
-print(f"  {OUT}/TASKLOT-walls-sheet.pdf            1 page   <- front+back walls only")
-write_svg("walls_sheet_page1", WALLS_SHEET[0][0], WALLS_SHEET[0][2])
+    write_pdf(f"{OUT}/TASKLOT-walls-sheet.pdf", WALLS_SHEET)
+    print(f"  {OUT}/TASKLOT-walls-sheet.pdf            1 page   <- front+back walls only")
+    write_svg("walls_sheet_page1", WALLS_SHEET[0][0], WALLS_SHEET[0][2])
 
-write_pdf(f"{OUT}/TASKLOT-OPTIONAL-bottom-panel.pdf", [BOTTOM])
-write_svg("optional_bottom_panel", BOTTOM[0], BOTTOM[2])
-print(f"  {OUT}/TASKLOT-OPTIONAL-bottom-panel.pdf  1 page   <- only if a 3rd sheet appears")
+    write_pdf(f"{OUT}/TASKLOT-OPTIONAL-bottom-panel.pdf", [BOTTOM])
+    write_svg("optional_bottom_panel", BOTTOM[0], BOTTOM[2])
+    print(f"  {OUT}/TASKLOT-OPTIONAL-bottom-panel.pdf  1 page   <- only if a 3rd sheet appears")
 
-write_pdf(f"{OUT}/TASKLOT-RECOVERY-small-parts.pdf", [RECOVERY])
-write_svg("TASKLOT-RECOVERY-small-parts", RECOVERY[0], RECOVERY[2], flatten=True)
-print(f"  {OUT}/TASKLOT-RECOVERY-small-parts.pdf   1 page   <- LCD, roof, sign, 6 holders")
+    write_pdf(f"{OUT}/TASKLOT-RECOVERY-small-parts.pdf", [RECOVERY])
+    write_svg("TASKLOT-RECOVERY-small-parts", RECOVERY[0], RECOVERY[2], flatten=True)
+    print(f"  {OUT}/TASKLOT-RECOVERY-small-parts.pdf   1 page   <- LCD, roof, sign, 6 holders")
 
-write_svg("TASKLOT-FINAL-RECUT-roof-sign-full-walls", RECUT[0], RECUT[2], flatten=True,
-          canvas=(336, 247), offset=(3, 3))
-print(f"  {OUT}/TASKLOT-FINAL-RECUT-roof-sign-full-walls.svg   <- walls, roof, sign, 8 RFID spacers")
+    write_svg("TASKLOT-FINAL-RECUT-roof-sign-full-walls", RECUT[0], RECUT[2], flatten=True,
+              canvas=(336, 247), offset=(3, 3))
+    print(f"  {OUT}/TASKLOT-FINAL-RECUT-roof-sign-full-walls.svg   <- walls, roof, sign, 8 RFID spacers")
 
-write_pdf(f"{OUT}/TASKLOT-OPTIONAL-deck-underside.pdf", [UNDERSIDE])
-write_svg("optional_deck_underside", UNDERSIDE[0], UNDERSIDE[2])
-print(f"  {OUT}/TASKLOT-OPTIONAL-deck-underside.pdf   1 page   <- dropped from the main file")
-write_pdf(f"{OUT}/TASKLOT-deck-sheet-ALT-all-vector.pdf", [ALT])
-write_svg("deck_sheet_ALT_all_vector", ALT[0], ALT[2])
-print(f"  {OUT}/TASKLOT-deck-sheet-ALT-all-vector.pdf        <- fallback for page 1 if the slot is short")
+    write_pdf(f"{OUT}/TASKLOT-OPTIONAL-deck-underside.pdf", [UNDERSIDE])
+    write_svg("optional_deck_underside", UNDERSIDE[0], UNDERSIDE[2])
+    print(f"  {OUT}/TASKLOT-OPTIONAL-deck-underside.pdf   1 page   <- dropped from the main file")
+    write_pdf(f"{OUT}/TASKLOT-deck-sheet-ALT-all-vector.pdf", [ALT])
+    write_svg("deck_sheet_ALT_all_vector", ALT[0], ALT[2])
+    print(f"  {OUT}/TASKLOT-deck-sheet-ALT-all-vector.pdf        <- fallback for page 1 if the slot is short")
+
+
+if __name__ == "__main__":
+    main()

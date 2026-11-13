@@ -15,7 +15,7 @@ hand-drawn.
 ```bash
 cd build/laser
 python3 make_uls_files.py     # needs OpenSCAD; set OPENSCAD_BIN if it is not on the default path
-./render.sh
+./render.sh                   # run from build/laser
 ```
 
 Text parts (the lot numerals and the sign lettering) take OpenSCAD several minutes each
