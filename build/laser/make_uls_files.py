@@ -18,7 +18,7 @@ only M/L/z, so the PDF paths below are exact, not approximated.
 
 Usage:  python3 make_uls_files.py
 """
-import os, re, subprocess
+import os, re, subprocess, zlib
 
 OPENSCAD = os.environ.get("OPENSCAD_BIN", "/opt/homebrew/bin/openscad")
 SCAD, OUT, TMP = "tasklot_laser.scad", "exports/uls", "exports/uls/.layers"
@@ -158,8 +158,11 @@ def write_pdf(path, pages):
     objs, kids = {}, []
     n = 3
     for _title, _note, groups in pages:
-        content = page_stream(groups)
-        objs[n] = (b"<< /Length %d >>\nstream\n" % len(content)) + content + b"\nendstream"
+        # Flate-compressed: the uncompressed stream is ~10x larger, and its long runs of
+        # plain-text coordinates are noise in diffs and text searches of the repo.
+        content = zlib.compress(page_stream(groups), 9)
+        objs[n] = (b"<< /Length %d /Filter /FlateDecode >>\nstream\n" % len(content)
+                   + content + b"\nendstream")
         objs[n + 1] = ("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %.4f %.4f] "
                        "/Contents %d 0 R /Resources << >> >>" % (W, H, n)).encode()
         kids.append(n + 1); n += 2
