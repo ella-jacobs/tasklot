@@ -31,7 +31,7 @@ that cannot be automated. The protocol and the system-wide edge cases are specif
 | Libraries | `MFRC522` 1.4.12 (miguelbalboa/rfid), `LiquidCrystal I2C` 1.1.2 (Frank de Brabander) |
 
 ```bash
-arduino-cli core install arduino:avr
+arduino-cli core install arduino:avr@1.8.8
 arduino-cli lib install "MFRC522@1.4.12" "LiquidCrystal I2C@1.1.2"
 arduino-cli compile --fqbn arduino:avr:mega:cpu=atmega2560 firmware/tasklot_full_v2
 arduino-cli upload  --fqbn arduino:avr:mega:cpu=atmega2560 -p <port> firmware/tasklot_full_v2

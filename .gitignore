@@ -6,6 +6,7 @@
 # Python
 __pycache__/
 *.pyc
+.venv/
 
 # Generated at runtime by the voice tools; holds real transcripts, never commit
 tools/voice/tasks.json

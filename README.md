@@ -7,9 +7,11 @@ where you park it is its priority.
 
 ![The TaskLot browser simulator: three cars parked in spaces 1 to 3, the 20 x 4 LCD showing their labels in priority order, and the serial log](docs/images/simulator.png)
 
-<sub>The browser simulator (`tools/sim/`), captured in headless Chrome after its demo
-button condensed three example memos onto cars 1 to 3 and cars 2, 1 and 3 were parked in
-spaces 1 to 3. The right column is the simulated LCD and the serial log.</sub>
+<sub>The browser simulator (`tools/sim/`) after its demo button condensed three example
+memos onto cars 1 to 3, with cars 2, 1 and 3 parked in spaces 1 to 3. The right column is
+the simulated LCD and the serial log. The spellings are deliberate: a label that misses
+the LCD's 18 characters by up to 3 loses interior vowels from its longest word (battry,
+coupn); past that it is truncated.</sub>
 
 <!-- TODO(Ella): add a photo or short GIF of the real build in use -->
 
@@ -93,7 +95,7 @@ line tools). Nothing to install.
 ```bash
 git clone https://github.com/ella-jacobs/tasklot.git
 cd tasklot
-make test                                            # every automated check, about 15 s
+make test                                            # every check that needs no install, about 15 s
 python3 tools/voice/tasklot_voice.py --text "remind me to charge the battery pack tonight" --car 1
 open tools/sim/tasklot-sim.html                      # the simulator (macOS; elsewhere open the file in a browser)
 ```
@@ -113,8 +115,12 @@ what the LCD would show (it also saves the task to `tools/voice/tasks.json`):
    |3>-                 |
    |4>-                 |
    +--------------------+
+
+  saved /path/to/tasklot/tools/voice/tasks.json
 ```
 
+"battry" is not a typo: the label missed 18 characters by one, so the condenser dropped
+an interior vowel from the longest word instead of cutting "pack".
 `python3 tools/voice/condense.py "<memo>"` prints the condenser's full result as JSON.
 
 ## Running it with the hardware
@@ -123,21 +129,24 @@ what the LCD would show (it also saves the task to `tools/voice/tasks.json`):
 wiring are in [`firmware/README.md`](firmware/README.md).
 
 ```bash
-arduino-cli core install arduino:avr
+arduino-cli core install arduino:avr@1.8.8
 arduino-cli lib install "MFRC522@1.4.12" "LiquidCrystal I2C@1.1.2"
 arduino-cli compile --fqbn arduino:avr:mega:cpu=atmega2560 firmware/tasklot_full_v2
 arduino-cli upload  --fqbn arduino:avr:mega:cpu=atmega2560 -p <port> firmware/tasklot_full_v2
 ```
 
-**Laptop (macOS).** `pyserial`, `ffmpeg`, and whisper.cpp with an English model:
+**Laptop (macOS).** `pyserial`, `ffmpeg`, and whisper.cpp with an English model.
+`pyserial` goes in a virtual environment, because Homebrew's Python refuses a plain
+`pip install` (PEP 668):
 
 ```bash
-python3 -m pip install -r tools/voice/requirements.txt
+python3 -m venv .venv
+.venv/bin/pip install -r tools/voice/requirements.txt
 brew install ffmpeg whisper-cpp
 mkdir -p ~/.whisper-models
 curl -L -o ~/.whisper-models/ggml-base.en.bin \
   https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
-TASKLOT_PORT=/dev/cu.usbmodem101 python3 tools/voice/tasklot_ears.py
+TASKLOT_PORT=/dev/cu.usbmodem101 .venv/bin/python tools/voice/tasklot_ears.py
 ```
 
 Only one program can hold the serial port, so close the Arduino Serial Monitor and the
@@ -146,7 +155,8 @@ simulator first. `TASKLOT_LLM=0` turns off the optional LLM label upgrade (it ca
 [`tools/voice/tasklot/config.py`](tools/voice/tasklot/config.py).
 
 **Simulator.** `tools/sim/tasklot-sim.html` can also attach to a real board over Web
-Serial (Chrome or Edge).
+Serial (Chrome or Edge). Labels, orders and read-backs work; v2 answers the simulator's
+`PARK`, `LEAVE` and `EMPTY` with "unknown command" (`DESIGN.md` E-30).
 
 ## Tests
 
@@ -168,9 +178,9 @@ make firmware    # compile every sketch for the Mega 2560 (needs arduino-cli and
   that requires the Python and JavaScript condensers to agree on thousands of inputs, and
   a check that the simulator's inlined copy is current.
 - **End to end.** The ears daemon as a real process against a fake board on a
-  pseudo-terminal, checking every byte it writes. It is skipped when `pyserial` is not
-  installed (`python3 -m pip install -r tools/voice/requirements.txt`, or
-  `make test PYTHON=/path/to/python3`).
+  pseudo-terminal, checking every byte it writes, and that SIGTERM shuts it down
+  cleanly. It is skipped when `pyserial` is not installed; with the virtual environment
+  above, run `make test PYTHON=.venv/bin/python` (about 30 s instead of 15).
 
 No test calls an LLM or needs a microphone, a model, or a board. The hardware checks that
 cannot be automated are in [`firmware/README.md`](firmware/README.md#manual-hardware-test-checklist)
@@ -188,7 +198,7 @@ and `DESIGN.md` section 7.
 │   └── history/              the seven earlier sketches that built up to v2
 ├── tools/
 │   ├── voice/                the laptop side: the tasklot package, condense.js, tests
-│   └── sim/                  the browser simulator, one self-contained HTML file
+│   └── sim/                  the browser simulator, one HTML file
 ├── build/
 │   ├── cad/                  OpenSCAD 3D-printed parts, STL exports, a pre-print audit
 │   ├── laser/                OpenSCAD laser-cut deck and walls, the laser run-file generator
@@ -198,7 +208,8 @@ and `DESIGN.md` section 7.
     └── images/               the README images
 ```
 
-Each folder has its own README. The physical build is parametric OpenSCAD throughout:
+`firmware/`, `firmware/history/`, `tools/voice/`, `tools/sim/` and each `build/` folder
+have their own README. The physical build is parametric OpenSCAD throughout:
 
 ![CAD render of the TaskLot deck, LCD frame and drive-through](docs/images/cad-assembly-iso.png)
 

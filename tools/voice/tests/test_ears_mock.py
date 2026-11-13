@@ -54,7 +54,7 @@ EXPECTED_WIRE = (
 STARTUP_WAIT_S = 2.0
 
 
-@unittest.skipUnless(HAVE_PYSERIAL, "pyserial not installed (python3 -m pip install pyserial)")
+@unittest.skipUnless(HAVE_PYSERIAL, "pyserial not installed (make test PYTHON=.venv/bin/python)")
 class EarsAgainstFakeBoardTest(unittest.TestCase):
     """One scripted session covering order, read-back, stray park, pickup, garbage."""
 

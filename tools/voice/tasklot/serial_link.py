@@ -43,7 +43,8 @@ def pyserial_factory(port: str, baud: int, timeout: float):
     try:
         import serial  # noqa: PLC0415 (optional dependency, imported on demand)
     except ImportError:
-        raise SerialLinkError("pyserial is not installed: python3 -m pip install pyserial") from None
+        raise SerialLinkError("pyserial is not installed for this Python "
+                              "(tools/voice/README.md shows the venv setup)") from None
     return serial.Serial(port, baud, timeout=timeout)
 
 

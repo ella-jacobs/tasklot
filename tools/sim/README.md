@@ -1,6 +1,7 @@
 # tools/sim — TaskLot in a browser, with no hardware
 
-`tasklot-sim.html` is a single self-contained page that simulates the parking lot:
+`tasklot-sim.html` is a single HTML file that simulates the parking lot (its fonts load
+from Google Fonts when online and fall back to system fonts offline):
 drag cars onto the four spaces, the speaker, and the pickup lane, and watch the LCD panel
 update. It follows the board's interaction rules (order at the speaker, park to finish,
 read back, collect at the pickup lane), and its task text comes from an inlined copy of

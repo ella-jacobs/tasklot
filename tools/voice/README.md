@@ -23,11 +23,15 @@ never re-labelled.
 
 ```bash
 cd tools/voice
-python3 -m pip install -r requirements.txt   # pyserial, the only dependency
-python3 tasklot_ears.py                  # live daemon (needs pyserial, ffmpeg, whisper-cli)
+python3 -m venv .venv                        # Homebrew's Python refuses a plain pip install
+.venv/bin/pip install -r requirements.txt    # pyserial, the only dependency
+.venv/bin/python tasklot_ears.py             # live daemon (needs pyserial, ffmpeg, whisper-cli)
 python3 tasklot_voice.py --text "remind me to charge the battery pack tonight" --car 1
 python3 condense.py "I need to email the professor by Friday"     # prints the JSON
 ```
+
+Only the live daemon and `--push` need pyserial; the offline commands and the
+condenser run on plain `python3`.
 
 The same commands are available as `python3 -m tasklot ears` and `python3 -m tasklot voice`.
 `tasklot_voice.py` keeps its original flags: audio files, `--text`, `--latest-memo`,
