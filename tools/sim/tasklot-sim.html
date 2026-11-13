@@ -721,9 +721,9 @@ const CD = window.TaskLotCondense;
 // ** ONE COMMAND AT A TIME. ** The board's serial RX buffer is 64 bytes and
 // printLot() blocks it for ~135 ms writing six lines at 9600 baud — long enough
 // for a burst to overrun the buffer and merge two commands into one. That is not
-// hypothetical; it corrupted a task line on the bench on 8/25 ("Charge baCAR 4
-// Glu"). So sendQ() queues, and pump() will not send the next line until the
-// board has finished answering the last one. Never write to the port directly.
+// hypothetical; it corrupted a task line on the bench ("Charge baCAR 4 Glu").
+// So sendQ() queues, and pump() will not send the next line until the board has
+// finished answering the last one. Never write to the port directly.
 //
 // Chrome or Edge only — Safari and Firefox have no Web Serial. The Arduino
 // Serial Monitor must be CLOSED or it holds the port.
