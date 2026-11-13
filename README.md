@@ -33,7 +33,8 @@ coupn); past that it is truncated.</sub>
 
 <sub>Every frame is the firmware's own output: [`docs/make_lcd_frames.py`](docs/make_lcd_frames.py)
 draws them from the transcripts in `firmware/tests/golden/`, which the host tests replay
-the sketch against.</sub>
+the sketch against. The frames come from three recorded sessions (an order, a read-back
+and a pickup), so frame 4 shows a different car's task.</sub>
 
 ```
  RFID sticker on each car

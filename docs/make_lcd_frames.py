@@ -29,7 +29,8 @@ FRAMES = [
     ("order_flow", "blank car 1 at the speaker", "1. Blank car at the speaker", "the laptop starts recording"),
     ("order_flow", "park car 1 on space 1: order closes", "2. Park it", "parking is the stop gesture"),
     ("order_flow", "laptop sends the label", "3. The label arrives", "space 1 is the top priority"),
-    ("readback", "laptop sends the full text", "4. Loaded car at the speaker", "the whole task, 3 rows a page"),
+    # From another recorded session, so the task differs from frames 1-3.
+    ("readback", "laptop sends the full text", "4. Loaded car at the speaker", "another car's task, 3 rows a page"),
     ("pickup", "carry car 1 from space 1 to pickup", "5. Through the pickup lane", "done; the car is blank again"),
 ]
 FRAMES_PER_ROW = 3
