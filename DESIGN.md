@@ -11,6 +11,12 @@ Source of truth for "current behaviour" is the code at the time of import:
 `tools/voice/condense.{js,py}`, `tools/voice/tasklot_voice.py`, and
 `tools/sim/tasklot-sim.html`.
 
+**Status.** The refactor described in section 6 is done. Sections 3 to 5 (and the
+"Today" column of every edge case) describe the code as it was imported, before the
+refactor; section 6.4 records how the voice pipeline was actually built and which
+"Fix" items changed, and [`firmware/README.md`](firmware/README.md) does the same for
+the firmware (architecture, memory use, and the original's quirks, kept or fixed).
+
 ---
 
 ## 1. The interaction
@@ -456,6 +462,18 @@ section 5 says "Fix", plus three small corrections found while porting:
 | E-17 | Unchanged: accents are dropped, not transliterated (still open). |
 | `TASK <n> ` | The empty echo after `DONE` is now parsed; it clears the label and the laptop's full text. |
 | Python port | Two places where `condense.py` had drifted from `condense.js` (a sentence break at index 0; a due phrase that also appears inside an earlier word) now match `condense.js`. Found by the cross-language test. |
+
+### 6.5 Firmware: as built
+
+The firmware follows 6.2, with smaller pieces split out of the planned `ParkingLot`
+and `LcdView`: `LaneDebouncer` (lane debounce), `ReadbackText` (the full-text buffer
+and word wrap), and the `OrderState` struct (who is ordering or being read back), which
+`TaskLot` owns and `LcdView` reads. A `Uid` value type carries reads, and `TaskLot`
+coordinates everything. The wire format
+is unchanged byte for byte; the host tests in `firmware/tests/` pin it against
+transcripts recorded from the original sketch. The full write-up, including the one
+deliberate behaviour change and a corrected reading of E-27 (a fast swap is not caught
+by the arrival rule), is in [`firmware/README.md`](firmware/README.md).
 
 ---
 
