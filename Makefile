@@ -16,6 +16,10 @@
 # Use a different interpreter (for example one that has pyserial) with:
 #   make test PYTHON=/path/to/python3
 
+# pipefail, so a failed compile fails `make firmware` even though its output goes through grep.
+SHELL       := /bin/bash
+.SHELLFLAGS := -o pipefail -c
+
 PYTHON ?= python3
 NODE   ?= node
 VOICE  := tools/voice
@@ -38,5 +42,5 @@ firmware:
 	@command -v arduino-cli >/dev/null || { echo "SKIP  arduino-cli not installed"; exit 0; }; \
 	for sketch in firmware/tasklot_full_v2 firmware/history/*/; do \
 		echo "== $$sketch"; \
-		arduino-cli compile --fqbn $(FQBN) $$sketch | grep -E "Sketch uses|rror" || exit 1; \
+		arduino-cli compile --fqbn $(FQBN) $$sketch 2>&1 | grep -E "Sketch uses|rror" || exit 1; \
 	done
