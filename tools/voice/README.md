@@ -91,7 +91,8 @@ node --test tools/voice/tests/*.test.js
 | `test_cleaner.py`, `test_labeler.py` | Filler-only transcripts; LLM guards against the real hallucinations seen on the bench; timeouts and junk output. |
 | `test_lot.py`, `test_config.py` | Spaces and priority order, moves and swaps, full lot, order ids, `tasks.json` round trip. |
 | `test_protocol.py`, `test_serial_link.py` | Every board event, garbage lines, look-alike text inside labels, byte-exact commands, read-back chunking, pacing, reconnect. |
-| `test_recorder.py` | ffmpeg stop escalation, minimum hold, failed start, whisper failures, all with subprocesses mocked. |
+| `test_recorder.py` | ffmpeg stop escalation, minimum hold, failed start, with the process mocked. |
+| `test_transcriber.py` | whisper-cli failures (missing binary, timeout, non-zero exit, tiny file), the offline script transcriber, the fake. |
 | `test_ears.py` | The daemon end to end with fakes: order flow, two cars at the speaker, pickup during an order or during labelling, the 60 s cap, RESET, reconnect. |
 | `test_cli.py` | The offline tool's output and `tasks.json` match the original script; `--push` pacing; `--watch`; clear errors. |
 | `test_ears_mock.py` | The real daemon process against a fake board on a pseudo-terminal, checking every byte written (needs pyserial). |
