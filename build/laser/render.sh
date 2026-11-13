@@ -1,4 +1,7 @@
 #!/bin/sh
+# Export the original per-sheet laser parts (sheet_*) from tasklot_laser.scad to SVG and
+# DXF in exports/. Run from build/laser. The VLS run files come from make_uls_files.py.
+# Set OPENSCAD_BIN if OpenSCAD is not at the Homebrew path.
 set -eu
 
 OPENSCAD_BIN="${OPENSCAD_BIN:-/opt/homebrew/bin/openscad}"
