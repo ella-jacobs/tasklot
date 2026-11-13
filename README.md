@@ -96,6 +96,27 @@ LLM or needs a microphone, a model, or a board. `make firmware` compiles every s
 
 Hardware checks that cannot be automated are listed in `DESIGN.md`, section 7.
 
+<!-- BEGIN firmware section: maintained with firmware/README.md -->
+## Firmware
+
+The board sketch in `firmware/tasklot_full_v2/` is split into small C++ classes, one per
+piece of real state: `RfidSlot` (one reader), `CarRegistry` (sticker -> car -> label,
+optional EEPROM), `ParkingLot` (which car is on which space), `LaneDebouncer`,
+`ReadbackText`, `LcdView` (the only code that draws, never blocking), and `SerialProtocol`
+(the exact wire format), coordinated by `TaskLot`. `setup()` and `loop()` are a few lines.
+
+```bash
+firmware/tests/run_tests.sh      # host tests: unit tests + whole-sketch scenarios, needs only c++
+make -C firmware check           # the host tests plus compiling every switch setting with arduino-cli
+```
+
+The host tests run the real sketch on a laptop against fakes of the Arduino libraries and
+compare every serial byte and LCD frame with transcripts recorded from the sketch before
+the refactor. **The refactor compiles and passes those tests but has not yet been
+re-tested on hardware**; [`firmware/README.md`](firmware/README.md) has the architecture,
+the recorded behaviour, memory use before and after, and the manual hardware checklist.
+<!-- END firmware section -->
+
 ## Credits
 
 Built as the final project for Digital Tangible User Interfaces at Dartmouth by Ella
