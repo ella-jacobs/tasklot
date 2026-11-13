@@ -92,6 +92,10 @@ void LcdView::closeReadback() {
   if (overlay_ == OV_PLAYING) overlay_ = OV_NONE;
 }
 
+void LcdView::closeOrderScreens() {
+  if (overlay_ == OV_ORDERING || overlay_ == OV_PLAYING) overlay_ = OV_NONE;
+}
+
 void LcdView::closeOverlay() { overlay_ = OV_NONE; }
 
 void LcdView::announce(const char* message, uint32_t now) {
@@ -203,7 +207,9 @@ void LcdView::paintReadback() {
     return;
   }
 
-  centreRow(ROW_MAIN, cars_.hasLabel(order_.playing) ? cars_.label(order_.playing) : TEXT_NO_TASK);
+  // NO_CAR is guarded so a stale state can never index the label table at -1.
+  bool labelled = order_.playing != NO_CAR && cars_.hasLabel(order_.playing);
+  centreRow(ROW_MAIN, labelled ? cars_.label(order_.playing) : TEXT_NO_TASK);
   centreRow(ROW_SUB, TEXT_EMPTY);
   centreRow(ROW_HINT, TEXT_EMPTY);
 }

@@ -190,21 +190,21 @@
   < 3>-\r\n
   < 4>-\r\n
   < --------------------\r\n
-  |                    |
-  |       CAR 0        |
-  |    listening...    |
-  | park it when done  |
--- LOT does not drop an ORDERING screen (t=4920)
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
+-- LOT after DONE (t=4920)
   < --------------------\r\n
   < 1>CAR 1\r\n
   < 2>-\r\n
   < 3>-\r\n
   < 4>-\r\n
   < --------------------\r\n
-  | ORDER IN PROGRESS  |
-  |       CAR 0        |
-  |    listening...    |
-  | park it when done  |
+  |1>CAR 1             |
+  |2>-                 |
+  |3>-                 |
+  |4>-                 |
 -- ORDER on a labelled car becomes a read-back (t=4980)
   < TASK 1 back again\r\n
   < --------------------\r\n

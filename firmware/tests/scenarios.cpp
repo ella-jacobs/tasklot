@@ -389,7 +389,7 @@ void scenarioCommands() {
     wait(300);
     send("DONE 2\n");
   }, 600);
-  act("LOT does not drop an ORDERING screen", [] { send("LOT\n"); });
+  act("LOT after DONE", [] { send("LOT\n"); });
   act("ORDER on a labelled car becomes a read-back", [] {
     send("CAR 1 back again\n");
     send("ORDER 1\n");

@@ -323,6 +323,9 @@ void TaskLot::runCommand(const char* line) {
       blankLabel(car);
       order_.playing = NO_CAR;
       order_.ordering = NO_CAR;
+      // The order and read-back are closed, so their screens go too. (The original
+      // sketch left them up, flashing "CAR 0" or reading the label of car -1.)
+      view_.closeOrderScreens();
       printLot();
       if (hadLabel) view_.announce(ANNOUNCE_ALL_DONE, millis());
       return;

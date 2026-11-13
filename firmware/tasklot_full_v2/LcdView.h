@@ -79,6 +79,12 @@ class LcdView {
   /** Drops YOUR ORDER if it is showing (the LOT command). Does not draw. */
   void closeReadback();
 
+  /**
+   * Drops ORDER IN PROGRESS or YOUR ORDER if either is showing, but lets an
+   * announcement run out (the DONE command). Does not draw.
+   */
+  void closeOrderScreens();
+
   /** Drops any overlay, back to the lot. Does not draw. */
   void closeOverlay();
 
