@@ -90,8 +90,16 @@ are in [`DESIGN.md`](DESIGN.md).
 
 ## Quick start (no hardware)
 
-Needs `python3` (3.9 or later), `node`, and a C++17 compiler (on macOS, the Xcode command
-line tools). Nothing to install.
+Needs `python3` (3.9 or later), `node` (18 or later, for `node --test`), and a C++17
+compiler. No Python or npm packages. On a Mac that has never been set up for development,
+install [Homebrew](https://brew.sh) first, then:
+
+```bash
+xcode-select --install                               # python3, git, make and the C++ compiler
+brew install node
+```
+
+Then:
 
 ```bash
 git clone https://github.com/ella-jacobs/tasklot.git
@@ -130,8 +138,10 @@ an interior vowel from the longest word instead of cutting "pack".
 wiring are in [`firmware/README.md`](firmware/README.md).
 
 ```bash
+brew install arduino-cli
 arduino-cli core install arduino:avr@1.8.8
 arduino-cli lib install "MFRC522@1.4.12" "LiquidCrystal I2C@1.1.2"
+arduino-cli board list                               # plug in the Mega; its port looks like /dev/cu.usbmodem101
 arduino-cli compile --fqbn arduino:avr:mega:cpu=atmega2560 firmware/tasklot_full_v2
 arduino-cli upload  --fqbn arduino:avr:mega:cpu=atmega2560 -p <port> firmware/tasklot_full_v2
 ```
@@ -147,11 +157,14 @@ brew install ffmpeg whisper-cpp
 mkdir -p ~/.whisper-models
 curl -L -o ~/.whisper-models/ggml-base.en.bin \
   https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
-TASKLOT_PORT=/dev/cu.usbmodem101 .venv/bin/python tools/voice/tasklot_ears.py
+TASKLOT_PORT=<port> .venv/bin/python tools/voice/tasklot_ears.py   # the port from arduino-cli board list
 ```
 
-Only one program can hold the serial port, so close the Arduino Serial Monitor and the
-simulator first. `TASKLOT_LLM=0` turns off the optional LLM label upgrade (it calls the
+The first time it records, macOS asks whether your terminal may use the microphone. Allow
+it; without it nothing is recorded (System Settings > Privacy & Security > Microphone).
+If the wrong microphone records, `ffmpeg -f avfoundation -list_devices true -i ""` lists
+the audio inputs; set `TASKLOT_MIC=:<number>`. Only one program can hold the serial port,
+so close the Arduino Serial Monitor and the simulator first. `TASKLOT_LLM=0` turns off the optional LLM label upgrade (it calls the
 `claude` CLI); every setting is listed in
 [`tools/voice/tasklot/config.py`](tools/voice/tasklot/config.py).
 
