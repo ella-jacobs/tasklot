@@ -159,7 +159,12 @@ simulator first. `TASKLOT_LLM=0` turns off the optional LLM label upgrade (it ca
 Serial (Chrome or Edge). Labels, orders and read-backs work; v2 answers the simulator's
 `PARK`, `LEAVE` and `EMPTY` with "unknown command" (`DESIGN.md` E-30).
 
-## Tests
+## How it was tested
+
+The board can't run in CI, so the tests are built around one rule: everything that does
+not need hardware runs on a laptop, and the refactored firmware must reproduce the exact
+serial output and LCD frames of the sketch that worked on the bench. That way the
+refactor could be checked without a board, and any change in behaviour fails a test.
 
 ```bash
 make test        # firmware host tests, Python unittest, node --test
@@ -186,6 +191,24 @@ make firmware    # compile every sketch for the Mega 2560 (needs arduino-cli and
 No test calls an LLM or needs a microphone, a model, or a board. The hardware checks that
 cannot be automated are in [`firmware/README.md`](firmware/README.md#manual-hardware-test-checklist)
 and `DESIGN.md` section 7.
+
+## Limitations
+
+TaskLot was built for one desk and a class demo, not for other people's use. In practice:
+
+- **The refactored firmware has not run on the board yet.** It matches the bench-tested
+  sketch's recorded output byte for byte in the host tests, but the last version proven
+  on hardware is the earlier single-file sketch in the git history.
+- **Six readers exceed the Mega's power budget.** The 3.3 V rail is rated 50 mA and six
+  RC522 readers draw 78 to 156 mA. Four were bench-tested together; six may need an
+  external regulator.
+- **A fast swap goes unseen.** If two cars trade spaces and both land within 1.2 s, the
+  board keeps the old assignment and shows the labels on the wrong lines. A slow swap
+  works (`DESIGN.md` E-27).
+- **Four spaces, one user, English only, macOS only.** The laptop side records with
+  ffmpeg's avfoundation input, speaks with `say`, and uses whisper.cpp's English model.
+- **The optional LLM label leaves the laptop.** It is on by default and sends the
+  transcript to Claude through the `claude` CLI; `TASKLOT_LLM=0` keeps everything local.
 
 ## Project structure
 
@@ -216,16 +239,13 @@ have their own README. The physical build is parametric OpenSCAD throughout:
 
 ## Credits
 
-Built as the final project for Digital Tangible User Interfaces at Dartmouth by Ella
-Jacobs, Colleen, and Riccardo.
-<!-- TODO(Ella): confirm with Colleen and Riccardo how they want to be credited (full names, GitHub links) before this goes public. -->
+Built as the final project for Digital Tangible User Interfaces at Dartmouth by
+[Ella Jacobs](https://github.com/ella-jacobs), [Colleen Bailey](https://github.com/colleenabailey),
+and [Riccardo Lussana](https://github.com/riklus).
 
-Ella owned the RFID firmware and the physical build; Colleen owned the presentation deck,
-the system spec, and the laser-cut fabrication model.
-<!-- TODO(Ella): confirm this split and add Riccardo's part. -->
-
-Written with Claude (Anthropic) as a coding assistant, as the course required to be
-disclosed. Libraries: MFRC522 by miguelbalboa (public domain), LiquidCrystal I2C by Frank
+Built with AI coding assistants, which the course required us to disclose: Claude Code and
+Codex during the course, and Claude Code for this public version (splitting the firmware
+into classes, most of the tests, and `DESIGN.md`). Libraries: MFRC522 by miguelbalboa (public domain), LiquidCrystal I2C by Frank
 de Brabander. Transcription uses whisper.cpp with OpenAI's Whisper models.
 
 ## License

@@ -486,7 +486,7 @@ make firmware    # compile every sketch for the Mega 2560 (needs arduino-cli + M
 ```
 
 No test calls an LLM or needs a microphone, a whisper model, or a board. The README's
-Tests section lists what each suite covers.
+"How it was tested" section lists what each suite covers.
 
 ---
 

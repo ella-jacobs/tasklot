@@ -1,4 +1,4 @@
-# CI for TaskLot: the same checks as the README's Tests section, on every push and PR.
+# CI for TaskLot: the same checks as the README's "How it was tested" section, on every push and PR.
 #
 #   test      `make test`: firmware host tests, Python unittest, node --test. pyserial
 #             is installed, so the ears end-to-end test runs instead of being skipped.
